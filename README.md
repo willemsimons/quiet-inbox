@@ -64,6 +64,8 @@ Mail from Outlook, iCloud, Yahoo or another server can join by forwarding it int
   buttons to the server.
 - `mac/`: the Mac app. `ios/`: the iPhone app (see `ios/README.md`; it needs your own Apple developer account and an
   iOS client in the same Google project).
+- `fonts/`: Figtree (SIL Open Font License), embedded in the page as the stand-in for Circular, the design's licensed
+  font. If you own Circular and have it installed, the page uses it instead.
 - `settings.json`, `client_secret.json`, `.tokens.json` and the caches stay on your Mac and are never committed.
 
 ## Tests
