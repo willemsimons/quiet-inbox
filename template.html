@@ -1,0 +1,1798 @@
+<title>Inbox</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one pane of blue glass over a wallpaper, like Catalog's Plasma theme.
+   Categories and today on the left, one list ordered by importance, the open email on the right.
+   Deliberately single-theme: the glass is the identity. Type is the terminal's SF Mono Italic. */
+:root {
+  color-scheme: dark;
+  --ink: #e6efff; --strong: #ffffff; --blue: #63d0ff; --lilac: #c9b0ee; --amber: #ffb86c;
+  --dim: #94aacf; --chip: rgba(255,184,108,.13); --gold: #ffd166; --danger: #ff8a7a;
+  /* Circular for everything: Regular and Medium for text, Bold for headers. */
+  --mono: "CircularXX TT", "Circular Std", Circular, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --head: "CircularXX TT", "Circular Std", Circular, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; color: var(--ink); font: normal 500 13.5px/1.5 var(--mono); -webkit-font-smoothing: antialiased; overflow: hidden;
+  background:
+    radial-gradient(55% 45% at 84% 8%, #9fb3d2 0, transparent 72%),
+    radial-gradient(50% 60% at 6% 92%, #3d5689 0, transparent 72%),
+    linear-gradient(118deg, transparent 38%, rgba(255,255,255,.13) 49%, transparent 60%),
+    linear-gradient(156deg, #6480ae 0, #385086 52%, #22325d 100%); }
+button, textarea { font: inherit; color: inherit; background: none; border: 0; padding: 0; }
+button { cursor: pointer; }
+i { font-style: normal; }
+:focus-visible { outline: 1px solid var(--blue); outline-offset: 2px; border-radius: 8px; }
+code { font: inherit; color: var(--amber); background: var(--chip); padding: 0 4px; border-radius: 4px; }
+
+html.skybg body { background: var(--sky); }
+html.skybg .glass { background: linear-gradient(122deg, rgba(150,190,255,.08) 0, transparent 34%, rgba(150,190,255,.06) 58%, transparent 80%), rgba(14,22,42,var(--glassA, .5)); }
+.window { position: relative; height: 100%; padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.glass { position: relative; height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden;
+  background:
+    linear-gradient(122deg, rgba(150,190,255,.10) 0, transparent 34%, rgba(150,190,255,.08) 58%, transparent 80%),
+    rgba(24,35,62,.60);
+  -webkit-backdrop-filter: blur(30px) saturate(110%); backdrop-filter: blur(30px) saturate(110%); }
+
+.tabs { display: flex; align-items: center; gap: 12px; padding: 14px 16px 8px; min-width: 0; }
+.navright { display: flex; align-items: center; gap: 6px; flex: none; margin-left: auto; }
+.navright .join { font: inherit; font-size: 12px; white-space: nowrap; }
+.iconbtn { display: grid; place-items: center; padding: 7px 9px; }
+.iconbtn svg { width: 14px; height: 14px; }
+.iconbtn.on { color: var(--blue); }
+.calbtn { display: flex; align-items: center; gap: 7px; margin-left: auto; flex: none; }
+.calbtn svg { width: 14px; height: 14px; }
+.seg { display: inline-flex; flex: none; gap: 2px; padding: 3px; }
+.tab { display: inline-flex; align-items: center; gap: 6px; color: var(--dim); padding: 6px 10px; border-radius: 999px; white-space: nowrap; }
+.tab svg { width: 15px; height: 15px; }
+.tab .nm { display: none; }
+.tab.on .nm { display: inline; }
+.tab.on { color: var(--strong); }
+.tab i { opacity: .72; font-variant-numeric: tabular-nums; font-size: 12px; }
+
+.panes { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 430px); min-height: 0; }
+/* Categories scroll inside the bar and fade out at its ends, so nothing is cut off with a hard edge. */
+.catbar { flex: 1; min-width: 0; display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none; padding-inline: 8px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 26px), transparent); mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 26px), transparent); }
+.catbar::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+.glass.cal .catbar { visibility: hidden; }
+.cat { display: inline-flex; flex: none; gap: 7px; align-items: center; padding: 6px 11px; border-radius: 999px; color: var(--dim); white-space: nowrap; }
+.cat.on { color: var(--strong); }
+.cat u { width: 8px; height: 8px; border-radius: 50%; background: oklch(76% .12 var(--h)); box-shadow: 0 0 8px oklch(76% .12 var(--h) / .7); }
+.cat.none u { background: var(--dim); box-shadow: none; }
+.cat.star u { width: auto; height: auto; margin-left: -2px; background: none; box-shadow: none; color: var(--gold); font-size: 15px; line-height: 1; font-style: normal; text-decoration: none; }
+.cat i { font-variant-numeric: tabular-nums; font-size: 12px; opacity: .8; }
+
+/* The list scrolls under a soft top and bottom edge. */
+.list { position: relative; isolation: isolate; overflow-y: auto; scrollbar-width: none; padding-block: 18px 70px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22px, #000 calc(100% - 48px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 22px, #000 calc(100% - 48px), transparent 100%); }
+
+/* Each cell's color lives on a layer taller than the row, faded on all four sides.
+   Neighbours overlap, so hues run into each other and into the glass with no edge anywhere. */
+.row { position: relative; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: start; }
+.row::before { content: ""; position: absolute; z-index: -1; inset: -26px 0;
+  background: oklch(84% .03 245); opacity: .17; transition: opacity .16s, background .16s;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 34%, #000 66%, transparent), linear-gradient(to right, transparent, #000 13%, #000 80%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 34%, #000 66%, transparent), linear-gradient(to right, transparent, #000 13%, #000 80%, transparent);
+  -webkit-mask-composite: source-in; mask-composite: intersect; }
+/* Unread mail glows softly. The topic color only shows while you hover. */
+.row:hover::before { background: oklch(62% var(--c, .1) var(--h, 250)); opacity: .5; }
+.row.sel::before, .row.picked::before { opacity: .3; }
+.row.sel:hover::before, .row.picked:hover::before { opacity: .62; }
+.dot { position: absolute; left: 10px; top: 27px; width: 8px; height: 8px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 8px rgba(99,208,255,.8); }
+.pick { position: relative; width: 38px; height: 38px; margin: 12px 0 0 26px; border-radius: 50%; }
+.box { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 50%; font-style: normal; color: transparent; opacity: 0; transition: opacity .12s;
+  background: rgba(9,18,46,.3); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.62); }
+.pick:hover .box, .pick:focus-visible .box, .selecting .box, .row.picked .box { opacity: 1; }
+.row.picked .box { background: #fff; color: #16223c; box-shadow: none; }
+.hit { display: block; padding: 12px 8px 12px 13px; text-align: left; min-width: 0; }
+.av { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-style: normal; color: #fff;
+  background: radial-gradient(circle at 32% 28%, oklch(78% .13 var(--h, 250)), oklch(46% .13 var(--h, 250))); }
+.top { display: flex; justify-content: space-between; gap: 14px; }
+.from { color: var(--strong); font: normal 700 14px/1.45 var(--head); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.when { color: var(--dim); font-size: 12px; white-space: nowrap; }
+.subj { color: var(--blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.snip { display: block; color: var(--ink); opacity: .84; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Hovering an email previews it in the reading pane; clicking opens it. */
+.rpreview { position: absolute; inset: 12px 24px 16px 10px; display: flex; flex-direction: column; min-height: 0; }
+.reader.previewing > :not(.rpreview) { visibility: hidden; }
+.reader.previewing .rhead small::after { content: " · Preview, click to open"; color: var(--blue); }
+.tools { display: flex; align-self: center; gap: 2px; margin-right: 12px; }
+.done, .fav { width: 30px; height: 30px; border-radius: 50%; color: var(--dim); opacity: 0; font-style: normal; transition: opacity .16s; }
+.done { position: absolute; right: 52px; top: 50%; translate: 0 -50%; width: auto; height: 26px; padding: 0 11px; border-radius: 999px; font-size: 12px; color: var(--strong); background: rgba(13,26,62,.9); white-space: nowrap; }
+.row:hover .done, .done:focus-visible, .row:hover .fav, .row.sel .fav, .fav:focus-visible { opacity: 1; }
+.fav { width: 34px; height: 34px; font-size: 21px; line-height: 1; }
+.fav.on { opacity: 1; color: var(--gold); }
+.bigstar { font-size: 15px; line-height: 1; font-style: normal; }
+/* Upcoming meetings: small separate cards above the mail, unlike the flowing rows below. */
+.meets { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; padding: 0 16px 14px 26px; }
+.meetcard { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 14px; background: rgba(170,200,255,.12); box-shadow: inset 0 .5px 0 rgba(255,255,255,.24); transition: background .16s; }
+.meetcard:hover { background: rgba(170,200,255,.18); }
+.mhit { display: block; min-width: 0; text-align: left; }
+.mhit b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: normal 700 13.5px/1.3 var(--head); color: var(--strong); }
+.mhit small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 1.4; color: var(--blue); }
+.mhit i { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; line-height: 1.4; color: var(--dim); }
+.meetcard .join { padding: 5px 14px; }
+.join { padding: 6px 15px; border-radius: 999px; font-size: 12px; color: #16223c; background: rgba(255,255,255,.92); text-decoration: none; }
+.join:hover { background: #fff; }
+/* Calendar: an hourly week beside the event editor. No grid lines; events are feathered like mail cells. */
+.calwrap { grid-column: 1 / -1; grid-row: 1 / -1; position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; min-height: 0; }
+.calview { min-height: 0; min-width: 0; overflow: auto; scrollbar-width: none; padding: 0 16px 24px; }
+.chead { position: sticky; left: 0; display: flex; align-items: center; gap: 12px; padding: 10px 6px 12px; }
+.cnav { display: flex; align-items: center; gap: 6px; }
+.cnav .act { padding: 6px 16px; font-size: 15px; min-height: 38px; }
+.calview .chead:has(.cnav) { padding-block: 7px 8px; }
+.cnav [data-week] { min-width: 42px; padding-inline: 0; font-size: 22px; line-height: 1; }
+.new { margin-left: auto; white-space: nowrap; font: inherit; font-size: 12px; }
+.dgrid { isolation: isolate; display: grid; grid-template-columns: 46px repeat(7, minmax(84px, 1fr)); }
+.dh { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 4px 7px 14px; font: normal 700 14px/1.4 var(--head); color: var(--dim); }
+.dh.today { color: var(--strong); }
+.adchip { display: block; width: 100%; text-align: left; padding: 2px 8px; border-radius: 999px; font: normal 500 12px var(--mono); color: var(--ink); background: oklch(62% .1 var(--h) / .34); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gutter { position: relative; height: var(--grid-h); }
+.hl { position: absolute; right: 8px; font-size: 11px; color: var(--dim); translate: 0 -50%; white-space: nowrap; }
+.hl.sub { font-size: 10px; opacity: .6; }
+.cev.thin { padding: 0; border-radius: 3px; }
+.calzoom { display: inline-flex; gap: 6px; margin-inline: 6px; }
+.calzoom .act { min-width: 42px; padding-inline: 0; font-size: 20px; line-height: 1; }
+.dcol { position: relative; height: var(--grid-h); min-width: 0; -webkit-user-select: none; user-select: none; cursor: crosshair; touch-action: pan-x pan-y; }
+.cev { position: absolute; display: block; min-width: 0; padding: 4px 7px; text-align: left; font-size: 11.5px; line-height: 1.3; cursor: pointer; }
+.cev > * { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cev::before { content: ""; position: absolute; z-index: -1; inset: -20px -14px; background: oklch(62% .1 var(--h)); opacity: .46; transition: opacity .16s;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 34px, #000 calc(100% - 34px), transparent), linear-gradient(to right, transparent, #000 34px, #000 calc(100% - 34px), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 34px, #000 calc(100% - 34px), transparent), linear-gradient(to right, transparent, #000 34px, #000 calc(100% - 34px), transparent);
+  -webkit-mask-composite: source-in; mask-composite: intersect; }
+.cev:hover::before, .cev.on::before { opacity: .78; }
+.cev b { font: normal 700 12.5px/1.3 var(--head); color: var(--strong); }
+.cev time, .cev small { color: var(--dim); font-size: 11px; }
+.cev.past { opacity: .42; }
+.cev.past::before { background: oklch(62% 0 0); }
+.nowline { position: absolute; left: 0; right: 0; z-index: 2; height: 2px; pointer-events: none; background: linear-gradient(to right, var(--amber), transparent); }
+.nowline::before { content: ""; position: absolute; left: -3px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--amber); }
+
+.editor { width: 400px; min-height: 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 11px; padding: 12px 22px 18px 16px; }
+.ftitle { width: 100%; border: 0; outline: 0; background: none; color: var(--strong); font: normal 700 20px/1.3 var(--head); }
+.ftitle::placeholder { color: var(--dim); }
+.frow { display: grid; grid-template-columns: 66px minmax(0, 1fr); gap: 8px; align-items: start; }
+.frow > span:first-child { color: var(--dim); font-size: 12px; padding-top: 6px; }
+.fstack { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.fi { min-width: 0; width: 100%; border: 0; outline: 0; border-radius: 10px; padding: 6px 10px; color: var(--ink); background: rgba(170,200,255,.11); font: inherit; font-size: 12.5px; color-scheme: dark; }
+.fline .fi { width: auto; flex: 1; }
+.fi:focus { box-shadow: inset 0 0 0 1px rgba(99,208,255,.55); }
+.fi::placeholder { color: var(--dim); }
+textarea.fi { height: 66px; padding-top: 7px; }
+.fcheck { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink); }
+.link { color: var(--blue); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gchip { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; }
+.gchip small { color: var(--dim); font-size: 11.5px; }
+.gchip button { color: var(--dim); }
+.act.on { color: #16223c; background: rgba(255,255,255,.92); }
+.efoot { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 8px; }
+.efoot .join { margin-left: auto; }
+.efoot .join, .efoot .act { font: inherit; font-size: 12px; white-space: nowrap; }
+.toast { position: absolute; z-index: 7; left: 50%; bottom: 18px; translate: -50% 0; display: flex; gap: 12px; align-items: center; max-width: calc(100% - 24px); padding: 7px 15px; border-radius: 999px; font-size: 12px; color: var(--strong);
+  background: rgba(13,26,62,.92); box-shadow: inset 0 .5px 0 rgba(255,255,255,.22), 0 6px 20px rgba(4,12,44,.45); }
+.toast[hidden] { display: none; }
+.composer { position: absolute; z-index: 6; right: 18px; bottom: 18px; width: min(500px, calc(100% - 24px)); max-height: calc(100% - 88px); overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 20px;
+  background: rgba(13,26,62,.95); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: inset 0 .5px 0 rgba(255,255,255,.22), 0 12px 40px rgba(4,12,44,.55); }
+.composer[hidden] { display: none; }
+.chd { display: flex; align-items: center; justify-content: space-between; }
+.chd h1 { font-size: 15px; }
+.chd button { color: var(--dim); }
+.composer .cclink { align-self: flex-end; color: var(--blue); font-size: 12px; }
+.composer textarea.fi { height: 190px; resize: vertical; }
+.cfoot { display: flex; align-items: center; justify-content: space-between; }
+.cfoot .join { font: inherit; font-size: 12px; }
+.settings { grid-column: 1 / -1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 22px 24px 40px; display: flex; flex-direction: column; align-items: center; }
+.setin { width: min(620px, 100%); display: flex; flex-direction: column; gap: 22px; }
+.setin h1 { font-size: 22px; }
+.setin > p { margin: -14px 0 0; color: var(--dim); }
+.ws { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; align-items: start; }
+.wsicon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--strong); background: rgba(170,200,255,.16); }
+.wsicon svg { width: 21px; height: 21px; }
+.wsbody { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.wsbody small { color: var(--dim); font-size: 12px; }
+.pick-icons { display: flex; flex-wrap: wrap; gap: 3px; }
+.pick-icons button { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; color: var(--dim); }
+.pick-icons button:hover { color: var(--strong); background: rgba(170,200,255,.13); }
+.pick-icons button.on { color: var(--strong); background: rgba(170,200,255,.22); box-shadow: inset 0 .5px 0 rgba(255,255,255,.3); }
+.pick-icons svg { width: 16px; height: 16px; }
+.toast button { color: var(--blue); white-space: nowrap; }
+.glass.cal .status, .glass.cal .bulk { display: none; }
+.done:hover { color: var(--strong); }
+/* Read mail: white text at 35%, picture at 50%, gray cell. */
+/* Read mail sits straight on the background: no glow under it. */
+.row.read::before { background: oklch(62% 0 0); opacity: 0; }
+/* A glow fades out at its own edge when the next row is read or a meeting, so only unread neighbors blend. */
+.row:not(.read):has(+ .row.read)::before, .row:not(.read):has(+ .wait)::before { bottom: 0; }
+.row.read + .row:not(.read)::before, .meets + .row:not(.read)::before, .wait + .row:not(.read)::before { top: 0; }
+.row.read.sel::before { opacity: 0; }
+.row.read.picked::before { background: oklch(84% .03 245); opacity: .2; }
+.row.read:hover::before { background: oklch(62% var(--c, .1) var(--h, 250)); opacity: .42; }
+.row.read .from, .row.read .when, .row.read .subj, .row.read .snip { color: rgba(255,255,255,.35); opacity: 1; }
+.row.read code { color: inherit; background: none; padding: 0; }
+.row.read .av { opacity: .5; }
+@media (hover: none) { .fav { opacity: .7; } .done, .hoveracts { display: none; } }
+.wait { display: flex; justify-content: space-between; gap: 16px; padding: 16px 28px 16px 26px; color: var(--dim); }
+.wait { align-items: center; }
+.wait button { color: var(--strong); white-space: nowrap; padding: 5px 12px; font-size: 12px; }
+
+.reader { position: relative; display: flex; flex-direction: column; min-height: 0; padding: 12px 24px 16px 10px; }
+.reader::before { content: ""; position: absolute; z-index: -1; inset: -40px -40px auto -60px; height: 280px; opacity: .3;
+  background: radial-gradient(closest-side, oklch(78% .03 245), transparent); }
+.back { display: none; color: var(--blue); margin-bottom: 12px; align-self: flex-start; }
+.rscroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 14px; padding-block: 8px 12px; }
+.rhead { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 13px; align-items: center; }
+.rhead .av { width: 44px; height: 44px; }
+.rhead small { display: block; font-size: 12px; color: var(--dim); }
+h1 { font: normal 700 17px/1.3 var(--head); color: var(--strong); margin: 0; text-wrap: balance; }
+.why { color: var(--lilac); margin: 0; padding-left: 12px; position: relative; }
+.why::before { content: ">"; position: absolute; left: 0; color: var(--dim); }
+.body { margin: 0; white-space: pre-line; line-height: 1.62; }
+.acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.act { padding: 6px 12px; font-size: 12px; }
+.act:disabled { opacity: .55; cursor: default; }
+.compose { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; padding: 8px 8px 8px 16px; margin-top: 10px; }
+textarea { width: 100%; resize: none; height: 60px; line-height: 1.45; outline: 0; padding-top: 4px; }
+textarea::placeholder { color: var(--dim); }
+.send { width: 32px; height: 32px; color: var(--strong); font-style: normal; }
+
+.zero { grid-column: 1 / -1; display: grid; place-content: center; gap: 12px; text-align: center; color: var(--dim); }
+.zero h1 { font-size: 22px; }
+.glass.has-bulk .status { display: none; }
+.status { position: absolute; left: calc((100% - 430px) / 2); translate: -50% 0; bottom: 16px; z-index: 3; white-space: nowrap; display: flex; gap: 10px; padding: 6px 12px; font-size: 12px; color: var(--ink); }
+.status button { color: var(--blue); }
+
+/* Quiet glass: a soft fill with one faint lit edge. No rim and no shadow, so the controls stay in the background. */
+.tab.on, .cat.on, .act, .send, .status, .back, .wait button, .fav:hover {
+  border-radius: 999px; background: rgba(170,200,255,.13); box-shadow: inset 0 .5px 0 rgba(255,255,255,.22); }
+.compose { border-radius: 24px; background: rgba(9,18,46,.40); box-shadow: inset 0 0 0 .5px rgba(200,222,255,.14); }
+.bulk { position: absolute; z-index: 5; left: 0; right: 430px; bottom: 18px; display: flex; justify-content: center; pointer-events: none; }
+.bar { pointer-events: auto; display: flex; align-items: center; gap: 2px; padding: 5px 6px 5px 15px; border-radius: 999px; font-size: 12px; color: var(--strong);
+  background: rgba(13,26,62,.88); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: inset 0 .5px 0 rgba(255,255,255,.22), 0 6px 20px rgba(4,12,44,.45); }
+.bar span { margin-right: 8px; white-space: nowrap; }
+.bar button { padding: 5px 11px; border-radius: 999px; white-space: nowrap; }
+.bar button:hover { background: rgba(170,200,255,.13); }
+.bar .del { color: var(--danger); }
+.orig { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 16px; background: rgba(13,26,62,.92); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); }
+.orig[hidden] { display: none; }
+.orighead { display: flex; align-items: center; gap: 12px; color: var(--dim); font-size: 12px; }
+.orig iframe { flex: 1; min-height: 0; width: 100%; border: 0; border-radius: 14px; background: #fff; }
+.act, .send, .done, .back, .wait button, .tab, .cat { transition: transform .14s, filter .14s; }
+.act:hover, .send:hover, .done:hover, .back:hover, .wait button:hover { filter: brightness(1.2); }
+.act:active, .send:active, .done:active, .back:active, .wait button:active, .tab:active, .cat:active { transform: scale(.96); }
+.back { padding: 5px 12px; }
+
+@media (max-width: 1120px) {
+  .panes { grid-template-columns: minmax(0, 1fr); }
+  .bulk { right: 0; }
+  .status { left: 50%; }
+  .calwrap { grid-template-columns: minmax(0, 1fr); }
+  .editor { position: absolute; z-index: 4; top: 0; right: 0; bottom: 0; background: rgba(13,26,62,.93); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); }
+  .reader { position: absolute; z-index: 4; top: 12px; right: 12px; bottom: 12px; width: min(440px, calc(100% - 24px)); padding: 18px; border-radius: 22px;
+    background: rgba(13,26,62,.82); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: inset 0 0 0 1px rgba(200,222,255,.18), 0 16px 50px rgba(4,12,44,.6); overflow: hidden; z-index: 4; }
+  .reader::before { display: none; }
+  .back { display: block; }
+  .reader:not(.peek) { display: none; }
+}
+@media (max-width: 720px) {
+  .panes { grid-template-rows: minmax(0, 1fr); }
+  .bulk { left: 0; }
+  .editor { width: 100%; padding-inline: 16px; }
+  .calview { padding-inline: 8px; }
+  .dgrid { grid-template-columns: 40px repeat(7, 92px); }
+  .calbtn span { display: none; }
+  .calbtn { padding: 7px 9px; }
+  .tabs { gap: 6px; padding-inline: 10px; }
+  .tab { padding: 6px 8px; font-size: 12px; }
+  .tab i { margin-left: 5px; }
+  .glass.has-bulk .status { display: none; }
+  .row { grid-template-columns: 58px minmax(0, 1fr) auto; }
+  .pick { margin: 11px 0 0 20px; }
+  .dot { left: 7px; top: 26px; }
+  .tools { margin-right: 4px; }
+  .tabs { flex-wrap: wrap; }
+  .catbar { order: 3; flex-basis: 100%; padding-inline: 0; }
+  .composer { right: 12px; bottom: 12px; }
+  .settings { padding-inline: 16px; }
+  .hit { padding: 11px 2px 11px 10px; }
+  .zero { grid-column: 1; }
+  .reader { top: 6px; right: 6px; bottom: 6px; width: calc(100% - 12px); }
+  .status { bottom: 10px; }
+  .tab:not(.on) i { display: none; }
+  .navright { gap: 4px; }
+  .navright .join { padding: 6px 11px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* Structure: sidebar, a header with the category tabs, then the columns. All one sheet of glass, with no lines or shadows between them. */
+.glass { display: flex; }
+.sidebar { width: 212px; flex: none; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 14px 8px 12px 14px; transition: width .3s; }
+.brand { flex: none; height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-left: 8px; }
+.brand strong { font: normal 700 16px/1.2 var(--head); color: var(--strong); white-space: nowrap; overflow: hidden; }
+.collapse { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 50%; color: var(--dim); }
+.collapse:hover { color: var(--strong); background: rgba(170,200,255,.13); }
+.collapse svg { width: 15px; height: 15px; }
+.histnav { display: flex; gap: 0; margin-left: auto; flex: none; }
+.hist { width: 26px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: var(--dim); }
+.hist:hover:not(:disabled) { color: var(--strong); background: rgba(170,200,255,.13); }
+.hist:disabled { opacity: .3; cursor: default; }
+.hist svg { width: 14px; height: 14px; }
+.snav { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 18px; }
+.ngroup { display: flex; flex-direction: column; gap: 1px; }
+.ngroup h2 { margin: 0; padding: 0 10px 5px; font: normal 700 12px/1.3 var(--head); color: var(--dim); }
+#tabs { display: flex; flex-direction: column; gap: 1px; }
+.navitem, .tab { width: 100%; height: 32px; display: flex; align-items: center; gap: 9px; padding: 0 12px 0 10px; border-radius: 999px; color: var(--dim); text-align: left; white-space: nowrap; transition: transform .14s, filter .14s; }
+.navitem:hover, .tab:hover { color: var(--ink); }
+.navitem.on, .tab.on { color: var(--strong); border-radius: 999px; background: rgba(170,200,255,.13); box-shadow: inset 0 .5px 0 rgba(255,255,255,.22); }
+.navitem svg, .tab svg { width: 15px; height: 15px; }
+.tab .nm, .tab.on .nm { display: block; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tab i { font-size: 12px; }
+.sfoot { flex: none; }
+.status, .glass.cal .status { position: static; left: auto; translate: none; display: inline-flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; width: 100%; border-radius: 14px; white-space: normal; }
+.glass.has-bulk .status { display: inline-flex; }
+.status { font-size: 11.5px; }
+.status span { white-space: nowrap; }
+.main { position: relative; flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.panes { flex: 1; grid-template-columns: minmax(0, 1fr) minmax(0, var(--reader-w, 560px)); }
+.bulk { right: var(--reader-w, 560px); }
+/* The reading pane's seam: a glass bubble with the desktop's arrows rides the pointer along it. */
+.divider { position: absolute; z-index: 6; top: 0; bottom: 0; right: var(--reader-w, 560px); width: 28px; margin-right: -14px; cursor: none; touch-action: none; outline: none; }
+.divider-handle { position: absolute; left: 50%; top: var(--handle-y, 50%); width: 44px; height: 44px; margin: -22px; display: grid; place-items: center; border-radius: 50%;
+  background: rgba(120,145,195,.32); -webkit-backdrop-filter: blur(24px) saturate(1.3); backdrop-filter: blur(24px) saturate(1.3);
+  box-shadow: 0 1px 6px rgb(0 0 0 / .45), inset 0 0 0 1px rgb(255 255 255 / .18); opacity: 0; pointer-events: none; transition: opacity .15s ease-out; }
+.handle-resizer { width: 44px; height: auto; pointer-events: none; user-select: none; }
+.divider:hover .divider-handle, .divider:focus-visible .divider-handle, .divider.is-dragging .divider-handle { opacity: 1; }
+body.is-column-resizing { cursor: none; user-select: none; }
+body.is-column-resizing iframe { pointer-events: none; }
+@media (max-width: 1180px) { .divider { display: none; } }
+/* Key actions use one primary button style. */
+:root { --accent: #3d9bff; --grid: rgba(255,255,255,.13); --grid-soft: rgba(255,255,255,.065); }
+.join, .send { display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--accent) 70%, black 10%); color: #fff; font: normal 600 13px/1 var(--head); text-decoration: none; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 85%, white) 0%, var(--accent) 100%); box-shadow: 0 1px 2px rgb(0 0 0 / .15), 0 6px 16px -8px var(--accent), inset 0 1px 0 rgb(255 255 255 / .35); transition: filter .18s, transform .12s; }
+.join { padding: 8px 14px; white-space: nowrap; }
+.join:hover, .send:hover { filter: brightness(1.07); }
+.join:active, .send:active { transform: translateY(1px) scale(.985); }
+/* Send is the Work chat send button: a glowing blue sphere with a white arrow. */
+button.send { width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; font-size: 0; color: transparent;
+  background: radial-gradient(circle at 50% 22%, #2f5cff 0, #4f7dff 45%, #8fbaff 100%); box-shadow: 0 4px 14px rgba(45,95,255,.38), inset 0 0 0 1px rgba(255,255,255,.18); }
+button.send::after { content: ""; display: block; width: 100%; height: 100%; background: center / 46% no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 13V3M3.8 7.2 8 3l4.2 4.2'/%3E%3C/svg%3E"); }
+button.send:hover { filter: brightness(1.08); }
+button.send:active { transform: scale(.94); }
+button.send:disabled { filter: saturate(.4) brightness(.8); cursor: default; }
+/* Calendar: the week sits on a ruled grid, and events are defined cells. */
+.dgrid { --hour: 44px; border-top: 1px solid var(--grid); }
+.dh { padding: 6px 8px; border-left: 1px solid var(--grid); border-bottom: 1px solid var(--grid); }
+.dh:first-of-type, .dgrid > style + .dh { border-left: 0; border-bottom: 1px solid var(--grid); }
+/* The week title and the row of days stay put while the hours scroll under them. */
+.calview .chead { top: 0; z-index: 6; margin-inline: -16px; padding-inline: 22px; background: linear-gradient(rgba(14,22,42,.55), rgba(14,22,42,.4));
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+.calview .dh { position: sticky; top: var(--chead-h, 58px); z-index: 5; background: rgba(14,22,42,.42); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+.dcol { border-left: 1px solid var(--grid); background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--hour) - 1px), var(--grid-soft) calc(var(--hour) - 1px), var(--grid-soft) var(--hour)),
+  repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--hour) / 2 - 1px), rgba(255,255,255,calc(.035 * var(--fine, 0))) calc(var(--hour) / 2 - 1px), rgba(255,255,255,calc(.035 * var(--fine, 0))) calc(var(--hour) / 2)); }
+.cev { padding: 1px 7px; overflow: hidden; border: 1px solid oklch(68% .1 var(--h) / .55); border-radius: 8px; background: oklch(60% .09 var(--h) / .28); box-shadow: inset 0 1px 0 rgba(255,255,255,.16); transition: background .15s; }
+.cev::before { display: none; }
+.cev:hover { background: oklch(60% .09 var(--h) / .42); }
+.cev.on { border-color: var(--accent); background: rgba(61,155,255,.26); }
+.nowline { height: 2px; background: #f87171; }
+.nowline::before { left: -4px; top: -3px; background: #f87171; }
+/* A collapsed sidebar opens over the page while the pointer rests on it, then folds away again. */
+/* The sidebar is its own pane of glass with a soft shadow edge, open or folded. */
+.sidebar { position: relative; z-index: 20; border-radius: 0 18px 18px 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0) 40%), rgba(44,62,104,.94);
+  -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: 18px 0 40px rgba(8,16,40,.35), inset -1px 0 0 rgba(205,222,255,.14); }
+/* With the sky behind, the sidebar is tinted glass too: a touch deeper than the page so it still reads as its own pane. */
+html.skybg .sidebar { background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0) 40%),
+    linear-gradient(rgba(14,22,42,calc(var(--glassA, .5) - .08)), rgba(14,22,42,calc(var(--glassA, .5) - .08))), var(--sky);
+  background-attachment: scroll, fixed, fixed, fixed, fixed;
+  -webkit-backdrop-filter: blur(28px) saturate(115%); backdrop-filter: blur(28px) saturate(115%); }
+/* Opening it from the folded rail makes room: the inbox slides over instead of being covered. */
+.glass.collapsed.sidepeek .sidebar { width: 212px; padding-inline: 14px 8px; }
+/* Upcoming meetings scroll sideways when there are more than fit. */
+.meets { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; padding: 0 16px 14px 26px;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.meets::-webkit-scrollbar { display: none; }
+.meets .meetcard { flex: 0 0 min(300px, 82%); scroll-snap-align: start; }
+/* Snap to the padded edge, not the bare edge, so the first card keeps its distance from the sidebar. */
+.meets { scroll-padding-inline: 30px 16px; padding-left: 30px; }
+.main { padding-left: 6px; }
+/* Today: a short read of the day at the top of the inbox. To do on the left, the news on the right, the rest as counts. */
+.todaycard { margin: 0 16px 14px 30px; padding: 14px 16px 12px 18px; border-radius: 16px; background: rgba(170,200,255,.10); box-shadow: inset 0 .5px 0 rgba(255,255,255,.22); }
+.tdhead { display: flex; align-items: baseline; gap: 10px; }
+.tdhead h2 { margin: 0; font: normal 700 17px/1.2 var(--head); color: var(--strong); }
+.tdhead small { font-size: 12px; color: var(--dim); }
+.tdhead .tfold { margin-left: auto; padding: 3px 10px; font-size: 11.5px; color: var(--dim); border-radius: 999px; }
+.tdhead .tfold:hover { color: var(--strong); background: rgba(255,255,255,.07); }
+.tline { margin: 6px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--lilac); }
+.tcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 22px; margin-top: 12px; }
+.tcols h3 { margin: 0 0 4px; font: normal 700 11px/1.4 var(--head); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+.tlist { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; }
+.tlist li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 8px; border-radius: 9px; }
+.tlist li:hover { background: rgba(255,255,255,.05); }
+.tcheck { width: 18px; height: 18px; margin: 4px 0 0 4px; display: grid; place-items: center; border-radius: 50%; font-size: 11px; color: transparent; box-shadow: inset 0 0 0 1.3px rgba(200,220,255,.45); }
+.tcheck:hover { box-shadow: inset 0 0 0 1.3px var(--strong); color: rgba(255,255,255,.5); }
+.tlist li.done .tcheck { color: #16223c; background: rgba(255,255,255,.85); box-shadow: none; }
+.tgo { min-width: 0; padding: 3px 4px 4px 0; text-align: left; font-size: 13px; line-height: 1.4; color: var(--strong); }
+.tgo i { display: block; font-style: normal; font-size: 11.5px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tlist li.done .tgo { color: var(--dim); text-decoration: line-through; text-decoration-color: rgba(169,186,219,.5); }
+.tdue { margin: 4px 6px 0 0; padding: 1px 8px; border-radius: 999px; font-size: 11px; line-height: 1.5; color: var(--gold); background: var(--chip); white-space: nowrap; }
+.tlist li.done .tdue { opacity: .4; }
+.tnews li { grid-template-columns: auto minmax(0, 1fr); }
+.tnews .tbul { width: 5px; height: 5px; margin: 10px 2px 0 8px; border-radius: 50%; background: var(--blue); opacity: .8; }
+.tnews li.seen .tbul { background: var(--dim); opacity: .4; }
+.tnews li.seen .tgo { color: var(--dim); }
+.tquiet { padding: 3px 0 4px 4px; font-size: 12.5px; color: var(--dim); }
+.tcount { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 10px; padding-top: 10px; box-shadow: 0 -.5px 0 rgba(255,255,255,.08); font-size: 12px; color: var(--dim); }
+.tcount b { font-weight: 400; color: var(--strong); }
+.tcount button { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; font-size: 12px; color: var(--dim); background: rgba(255,255,255,.05); }
+.tcount button:hover { color: var(--strong); background: rgba(255,255,255,.1); }
+.tcount button u { width: 6px; height: 6px; border-radius: 50%; background: oklch(.78 .12 var(--h)); }
+.todaycard.folded .tcols, .todaycard.folded .tcount { display: none; }
+@media (max-width: 720px) { .todaycard { margin: 0 10px 12px 14px; } }
+/* Readability: one clear order per email (who, what, then a quieter preview), one accent color, and roomier reading text. */
+:root { --dim: #a9badb; }
+.from { font-size: 14.5px; }
+.snip { color: #a9badb; opacity: 1; font-size: 13px; }
+/* Lines inside an email sit close together; emails sit further apart. */
+.from { line-height: 1.25; }
+.subj { line-height: 1.3; margin-top: 2px; }
+.snip { line-height: 1.35; margin-top: 1px; }
+.hit { padding-block: 10px; }
+.row { margin-bottom: 12px; }
+.row code { padding: 0 4px; border-radius: 4px; background: var(--chip); color: var(--amber); }
+.reader .body { font-size: 15px; line-height: 1.68; max-width: 62ch; color: #e9eefa; }
+.reader .why { font-size: 13.5px; }
+.rhead small { color: #a9badb; }
+.cat.unreadcat u { background: var(--blue); box-shadow: 0 0 8px rgba(99,208,255,.7); }
+/* Hovering an email shows Mark read and Delete as liquid-glass pills: a bright lit edge over a saturated blur. */
+.hoveracts { position: absolute; right: 52px; top: 50%; translate: 0 -50%; display: flex; gap: 6px; opacity: 0; transition: opacity .16s; pointer-events: none; }
+.row:hover .hoveracts, .row.sel .hoveracts, .hoveracts:focus-within { opacity: 1; pointer-events: auto; }
+.row.sel .when { opacity: 0; }
+.hoveracts .done { position: static; translate: none; opacity: 1; height: 28px; padding: 0 13px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff;
+  background: linear-gradient(172deg, rgba(255,255,255,.24), rgba(255,255,255,.07) 46%, rgba(255,255,255,.13)), rgba(40,58,100,.55);
+  -webkit-backdrop-filter: blur(14px) saturate(175%); backdrop-filter: blur(14px) saturate(175%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 1px rgba(255,255,255,.12), inset 0 0 0 .5px rgba(255,255,255,.28), 0 4px 14px rgba(5,14,50,.3);
+  transition: filter .14s, transform .12s; }
+.hoveracts .done:hover { filter: brightness(1.18); }
+.hoveracts .done:active { transform: scale(.96); }
+.hoveracts .delbtn { color: #ffc2b8; }
+.moremail { display: block; margin: 14px auto 24px; padding: 8px 18px; }
+/* Attachments on a cell: a pill per file (two at most, then +N). */
+.clips { display: flex; gap: 6px; margin-top: 7px; min-width: 0; }
+.clip { display: inline-flex; align-items: center; gap: 5px; max-width: 220px; min-width: 0; height: 24px; padding: 0 10px 0 8px; border-radius: 999px;
+  font-size: 12px; color: var(--ink); background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+.clip svg { width: 13px; height: 13px; flex: none; opacity: .75; }
+.clip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clip.more { padding: 0 9px; color: var(--dim); }
+.hoveracts .done:disabled { opacity: .55; cursor: default; filter: none; }
+/* While the buttons show, the email's text fades out just before them instead of running underneath.
+   --acts is the button group's width, measured when the row is hovered or selected. */
+@property --mcut { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --mfeather { syntax: "<length>"; inherits: false; initial-value: 0px; }
+.row .hit { -webkit-mask-image: linear-gradient(to left, transparent var(--mcut), #000 calc(var(--mcut) + var(--mfeather))); mask-image: linear-gradient(to left, transparent var(--mcut), #000 calc(var(--mcut) + var(--mfeather)));
+  transition: --mcut .16s, --mfeather .16s; }
+.row:hover .hit, .row.sel .hit { --mcut: calc(var(--acts, 0px) + 10px); --mfeather: 36px; }
+@media (hover: none) { .row:hover .hit, .row.sel .hit { --mcut: 0px; --mfeather: 0px; } }
+.undopill { position: absolute; z-index: 6; left: 0; right: var(--reader-w, 560px); bottom: 20px; display: flex; justify-content: center; pointer-events: none; }
+.undoglass { pointer-events: auto; display: flex; align-items: center; gap: 12px; padding: 7px 8px 7px 18px; border-radius: 999px; font-size: 13px; color: #fff;
+  background: linear-gradient(172deg, rgba(255,255,255,.24), rgba(255,255,255,.07) 46%, rgba(255,255,255,.13)), rgba(40,58,100,.62);
+  -webkit-backdrop-filter: blur(16px) saturate(175%); backdrop-filter: blur(16px) saturate(175%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 1px rgba(255,255,255,.12), inset 0 0 0 .5px rgba(255,255,255,.28), 0 8px 24px rgba(5,14,50,.38);
+  animation: undoin .22s cubic-bezier(.2,.8,.2,1); }
+.undoglass button { padding: 6px 14px; border-radius: 999px; font-weight: 600; color: #fff; background: linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,.1)); box-shadow: inset 0 1px 0 rgba(255,255,255,.45); }
+.undoglass button:hover { filter: brightness(1.15); }
+@keyframes undoin { from { opacity: 0; transform: translateY(8px); } }
+@media (max-width: 1180px) { .undopill { right: 0; } }
+/* The email you're reading: a defined, highlighted cell, read or not. */
+.list .row.sel { border-radius: 14px; background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)), rgba(99,160,255,.17);
+  box-shadow: inset 0 0 0 1px rgba(150,200,255,.38), inset 3px 0 0 #63d0ff, 0 6px 20px rgba(5,14,50,.25); }
+.list .row.sel::before, .list .row.sel:hover::before { opacity: 0; }
+.list .row.sel.read .from { color: var(--strong); }
+.list .row.sel.read .subj { color: var(--blue); }
+.list .row.sel.read .snip, .list .row.sel.read .when { color: #a9badb; }
+.list .row.sel.read .av { opacity: 1; }
+.list .row.sel .fav { opacity: 1; }
+/* The search bar wears the same quiet glass as the selected sidebar button: a soft fill, one lit top edge, fully round. */
+.searchbar { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 10px; margin: 0 16px 12px 26px; padding: 9px 16px; border-radius: 999px;
+  background: rgba(170,200,255,.13); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  box-shadow: inset 0 .5px 0 rgba(255,255,255,.22); transition: background .15s, box-shadow .15s; }
+.searchbar:focus-within { background: rgba(170,200,255,.18); box-shadow: inset 0 .5px 0 rgba(255,255,255,.28), inset 0 0 0 1px rgba(150,200,255,.35); }
+.searchbar svg { width: 15px; height: 15px; flex: none; color: var(--ink); }
+.searchbar input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; color: var(--strong); }
+.searchbar input::placeholder { color: var(--dim); }
+.searchbar input::-webkit-search-cancel-button { filter: invert(1) opacity(.6); }
+.snote { flex: none; font-size: 12px; color: var(--dim); white-space: nowrap; }
+.snote button { color: var(--blue); }
+.zero.inlist { grid-column: auto; min-height: 60%; }
+.list:has(.zero.inlist) { grid-column: 1 / -1; }
+/* The search bar floats over the top of the list; mail fades out before reaching it instead of showing through the glass. */
+.listcol { position: relative; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
+.listcol:has(.zero.inlist) { grid-column: 1 / -1; }
+.listcol > .list { flex: 1; min-height: 0; padding-top: 74px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent 58px, #000 94px, #000 calc(100% - 48px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, transparent 58px, #000 94px, #000 calc(100% - 48px), transparent 100%); }
+.listcol > .searchbar { position: absolute; top: 12px; left: 26px; right: 16px; margin: 0; }
+.ws.looks { display: block; }
+.lookh { font: normal 700 14px/1.3 var(--head); color: var(--strong); }
+.lookpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
+.lookopt { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px; border-radius: 14px; text-align: left; background: rgba(170,200,255,.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+.lookopt.on { background: rgba(99,160,255,.18); box-shadow: inset 0 0 0 1px rgba(150,200,255,.5); }
+.lookopt b { font: normal 700 13px/1.2 var(--head); color: var(--strong); }
+.lookopt small { font-size: 11.5px; line-height: 1.35; color: var(--dim); }
+.bgpick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.bgswatch { width: 100%; height: 34px; border-radius: 9px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+.bgswatch.bg-sky { background: linear-gradient(90deg, #0b1230 0, #f2a57a 22%, #5d98e6 45%, #2a5ac6 60%, #f4b06c 78%, #241e48 90%, #050816 100%); }
+.bgswatch.bg-classic { background: linear-gradient(156deg, #6480ae 0, #385086 52%, #22325d 100%); }
+.skytry { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 12px; color: var(--dim); }
+.skytry input { flex: 1; accent-color: #63a0ff; }
+.skytry output { min-width: 64px; text-align: right; color: var(--ink); }
+.lookswatch { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 8px; border-radius: 8px; }
+.lookswatch i { display: block; height: 4px; border-radius: 2px; }
+.lookswatch i:nth-child(2) { width: 80%; } .lookswatch i:nth-child(3) { width: 55%; }
+.look-dark { background: #1e2230; } .look-dark i { background: #e6ecf8; }
+.look-dim { background: #2b3242; } .look-dim i { background: #b9c3d6; }
+.look-light { background: #fff; } .look-light i { background: #3c4043; }
+@media (max-width: 720px) { .lookpick { grid-template-columns: 1fr; } }
+/* The mockup's stand-in email body follows the setting too. */
+[data-look="light"] .reader .body { padding: 14px 16px; border-radius: 12px; background: #fff; color: #202124; }
+[data-look="dim"] .reader .body { color: #b9c3d6; }
+/* Compose: a light pane of glass, in the same family as the calendar's event cells. */
+.composer { border-radius: 16px; border: 1px solid rgba(205,222,255,.30);
+  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.02) 55%), rgba(88,108,156,.86);
+  -webkit-backdrop-filter: blur(26px) saturate(125%); backdrop-filter: blur(26px) saturate(125%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 18px 48px rgba(8,16,40,.32); }
+.composer .fi { background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 1px rgba(205,222,255,.16); }
+.composer .fi:focus { box-shadow: inset 0 0 0 1px rgba(99,208,255,.6); }
+.composer .fi::placeholder { color: rgba(225,235,255,.55); }
+.composer .act { background: rgba(255,255,255,.10); }
+/* News: a reading page with its own streak. Issues live here, not in the inbox. */
+.newsi { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-style: normal; color: var(--gold); }
+.navitem .newsi svg { width: 12px; height: 12px; opacity: 1; }
+.newscol { min-height: 0; min-width: 0; display: flex; flex-direction: column; }
+.newscol .list { flex: 1; padding-top: 8px; }
+.streak { flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; margin: 14px 16px 4px 26px; padding: 11px 16px; border-radius: 14px; background: rgba(170,200,255,.12); box-shadow: inset 0 .5px 0 rgba(255,255,255,.24); }
+.streak strong { font: normal 700 30px/1 var(--head); color: var(--gold); }
+.streak b { display: block; font: normal 700 14px/1.3 var(--head); color: var(--strong); }
+.streak small { display: block; font-size: 12px; line-height: 1.4; color: var(--dim); }
+.sweek { display: flex; gap: 6px; }
+.sday { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10.5px; color: var(--dim); }
+.sday u { width: 12px; height: 12px; border-radius: 50%; background: rgba(170,200,255,.14); text-decoration: none; }
+.sday.lit u { background: var(--gold); box-shadow: 0 0 7px rgba(255,209,102,.55); }
+.sday.today u { box-shadow: inset 0 0 0 1.5px var(--gold); background: none; }
+.sday.today.lit u { background: var(--gold); box-shadow: 0 0 7px rgba(255,209,102,.55); }
+.glass.newsv .compose, .glass.newsv [data-rank] { display: none; }
+/* Categories live in the sidebar under the inboxes, each with its color orb. */
+.catbar { flex: none; order: 0; flex-basis: auto; display: flex; flex-direction: column; gap: 1px; overflow: visible; padding: 0; -webkit-mask-image: none; mask-image: none; }
+.glass.cal .catbar { visibility: visible; }
+.cat { width: 100%; height: 29px; display: flex; gap: 11px; padding: 0 12px 0 13px; text-align: left; }
+.cat span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sidebar .join { position: relative; flex: none; width: 100%; height: 34px; display: flex; align-items: center; justify-content: center; }
+.plus { display: none; font-size: 18px; font-style: normal; line-height: 1; }
+.glass.collapsed:not(.sidepeek) .sidebar { width: 66px; padding-inline: 10px; }
+.glass.collapsed:not(.sidepeek) .brand { justify-content: center; padding-left: 0; }
+.glass.collapsed:not(.sidepeek) .brand strong, .glass.collapsed:not(.sidepeek) .histnav, .glass.collapsed:not(.sidepeek) .lbl, .glass.collapsed:not(.sidepeek) .nm, .glass.collapsed:not(.sidepeek) .tab i, .glass.collapsed:not(.sidepeek) .cat span, .glass.collapsed:not(.sidepeek) .cat i, .glass.collapsed:not(.sidepeek) .ngroup h2, .glass.collapsed:not(.sidepeek) .sfoot, .glass.collapsed:not(.sidepeek) .newsi { display: none; }
+.glass.collapsed:not(.sidepeek) .plus { display: block; }
+.glass.collapsed:not(.sidepeek) .cat { justify-content: center; padding-inline: 0; }
+.glass.collapsed:not(.sidepeek) .navitem, .glass.collapsed:not(.sidepeek) .tab { justify-content: center; padding-inline: 0; }
+@media (max-width: 720px) {
+  .sidebar, .glass.collapsed:not(.sidepeek) .sidebar { width: 54px; padding: 12px 6px; }
+  .brand { justify-content: center; padding-left: 0; }
+  .brand strong, .collapse, .lbl, .tab .nm, .tab.on .nm, .tab i, .cat span, .cat i, .ngroup h2, .sfoot, .newsi, .sweek { display: none; }
+  .streak { margin: 10px 10px 2px 14px; grid-template-columns: auto minmax(0, 1fr); }
+  .plus { display: block; }
+  .cat { justify-content: center; padding-inline: 0; }
+  .navitem, .tab { justify-content: center; padding-inline: 0; }
+  .glass:not(.has-bulk) .status { display: none; }
+}
+/* ===== Herdr style (a test; Settings ▸ Style switches it). Everything for it lives in this block plus the herdrSky
+   script: delete both and the STYLES setting to remove it. Herdr's colors on Inbox's own fonts: its aurora behind
+   floating dark-glass cards with a hairline rim. Herdr shifts the aurora's hue when you change tabs; here the hue
+   drifts on its own, slowly, all the way round, and the accents drift with it. The aurora comes from Herdr's folder. ===== */
+html.style-herdr {
+  --ink: #e4f6f9; --strong: #ffffff; --dim: rgba(255,255,255,.55);
+  --hshift: 0deg; /* set by herdrSky: how far the hue has drifted from Herdr's default */
+  --hcard: rgba(0,10,9,.40); --hrim: rgba(255,255,255,.16); --hsel: rgba(255,255,255,.12); --hhover: rgba(255,255,255,.06);
+}
+html.style-herdr body { background: #0c2a3a !important; }
+#herdrsky { display: none; }
+html.style-herdr #herdrsky { display: block; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: url("/herdr/aurora.png") center / cover no-repeat; filter: hue-rotate(var(--hrot, 0deg)); will-change: filter; }
+html.style-herdr .glass { background: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; padding: 10px; gap: 10px; }
+/* No backdrop blur: the aurora is already soft, and blurring a moving background every frame costs for nothing. */
+html.style-herdr .sidebar, html.style-herdr .main { border-radius: 18px !important; background: var(--hcard) !important; border: 1px solid var(--hrim);
+  box-shadow: 0 18px 50px rgba(0,0,0,.28) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; overflow: hidden; }
+html.style-herdr .main { padding-left: 0; }
+html.style-herdr .navitem.on, html.style-herdr .tab.on { background: var(--hsel); box-shadow: inset 0 0 0 1px var(--hrim); }
+html.style-herdr .navitem:hover, html.style-herdr .tab:hover { background: var(--hhover); }
+html.style-herdr .ngroup h2 { color: var(--dim); }
+/* Accents follow the aurora: Herdr's cyan (hue 187) turned by however far the sky has drifted. */
+html.style-herdr button.send { filter: hue-rotate(calc(-28deg + var(--hshift))) saturate(.9); box-shadow: 0 4px 14px hsl(calc(187deg + var(--hshift)) 100% 42% / .3);
+  transition: filter 4s linear, box-shadow 4s linear; }
+html.style-herdr .join { background: hsl(calc(187deg + var(--hshift)) 100% 42% / .22); border: 1px solid hsl(calc(187deg + var(--hshift)) 85% 59% / .45);
+  color: hsl(calc(187deg + var(--hshift)) 85% 89%); box-shadow: none; transition: background-color 4s linear, border-color 4s linear, color 4s linear; }
+html.style-herdr .act { background: var(--hhover); box-shadow: inset 0 0 0 1px var(--hrim); }
+html.style-herdr .todaycard, html.style-herdr .searchbar, html.style-herdr .status, html.style-herdr .meetcard { background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px var(--hrim); }
+html.style-herdr .calview .chead, html.style-herdr .calview .dh { background: rgba(0,10,9,.55); }
+/* The style picker's swatches. */
+.stswatch { display: block; width: 100%; height: 40px; border-radius: 10px; margin-bottom: 8px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+.stswatch.st-inbox { background: linear-gradient(156deg, #6480ae, #385086 52%, #22325d); }
+.stswatch.st-herdr { background: linear-gradient(rgba(0,10,9,.4), rgba(0,10,9,.4)) 10px 10px / 40% calc(100% - 20px) no-repeat, linear-gradient(90deg, #1d5878, #4a3f86, #7a3d5e, #6d5a2a, #2e6a45, #1d5878); }
+</style>
+
+<script>
+/* The background is the sky's gradient at this moment of the real day: where the sun is over your city sets the colors
+   (night, dawn, daylight, golden hour, dusk), with the sun's glow low on the side it's on. Plain CSS gradients, updated once a minute. */
+(() => {
+  const P = { // zenith, horizon, sun glow
+    night:  [[0.015, 0.025, 0.08], [0.07, 0.1, 0.19], [0.32, 0.4, 0.58]],
+    late:   [[0.05, 0.06, 0.18], [0.3, 0.2, 0.3], [0.6, 0.4, 0.45]],
+    dawn:   [[0.28, 0.38, 0.66], [0.98, 0.76, 0.62], [1, 0.8, 0.6]],
+    sunny:  [[0.08, 0.32, 0.78], [0.48, 0.7, 0.94], [1, 0.97, 0.86]],
+    golden: [[0.2, 0.34, 0.62], [0.98, 0.72, 0.46], [1, 0.76, 0.42]],
+    dusk:   [[0.14, 0.16, 0.4], [0.9, 0.5, 0.4], [1, 0.58, 0.4]],
+  };
+  // Sun height (degrees) to palette, separately for morning and evening.
+  const MORNING = [[-90, "night"], [-14, "night"], [-7, "late"], [-2, "dawn"], [7, "dawn"], [20, "sunny"], [90, "sunny"]];
+  const EVENING = [[-90, "night"], [-14, "night"], [-8, "late"], [-3, "dusk"], [3, "golden"], [12, "golden"], [24, "sunny"], [90, "sunny"]];
+  const rad = Math.PI / 180;
+  // Where the sky is: your city from settings (London until you set one). skyPlace() can move it for previews.
+  const homeCity = () => { const c = window.REAL_DATA?.city; return c && isFinite(c.lat) && isFinite(c.lon) ? c : {name: "London", lat: 51.51, lon: -0.13}; };
+  let place = {lat: homeCity().lat, lon: homeCity().lon, utc: null};
+
+  function sun(date) {
+    const LAT = place.lat, LON = place.lon;
+    const offMin = place.utc == null ? date.getTimezoneOffset() : -place.utc * 60;
+    const n = (date - new Date(date.getFullYear(), 0, 0)) / 864e5, g = 2 * Math.PI / 365 * (n - 1);
+    const decl = 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) + 0.000907 * Math.sin(2 * g);
+    const eot = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+    // true solar time in minutes = clock + equation of time + 4·longitude − 60·UTC offset
+    const tst = date.getHours() * 60 + date.getMinutes() + eot + 4 * LON + offMin;
+    const ha = (tst / 4 - 180) * rad;
+    const alt = Math.asin(Math.sin(LAT * rad) * Math.sin(decl) + Math.cos(LAT * rad) * Math.cos(decl) * Math.cos(ha)) / rad;
+    return {alt, ha: ha / rad};
+  }
+  const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+  function palette(s) {
+    const track = s.ha < 0 ? MORNING : EVENING;
+    let i = 0;
+    while (i < track.length - 2 && s.alt > track[i + 1][0]) i++;
+    const [a0, n0] = track[i], [a1, n1] = track[i + 1];
+    const t = Math.min(1, Math.max(0, (s.alt - a0) / (a1 - a0))), e = t * t * (3 - 2 * t);
+    return P[n0].map((v, k) => mix(v, P[n1][k], e));
+  }
+  const css = (c, a = 1) => `rgba(${c.map(v => Math.round(Math.min(1, v) * 255)).join(",")},${a})`;
+
+  let override = null, pinned = null; // hours: the settings preview, and ?sky=HH:MM for a fixed time
+  try { const q = new URLSearchParams(location.search).get("sky"); if (q) { const [hh, mm] = q.split(":"); pinned = +hh + (+mm || 0) / 60; } } catch {}
+  function at() {
+    // "local" clock fields: this Mac's, or the chosen place's
+    const d = place.utc == null ? new Date() : new Date(Date.now() + (new Date().getTimezoneOffset() + place.utc * 60) * 60000);
+    const fixed = override ?? pinned;
+    if (fixed != null) d.setHours(Math.floor(fixed), Math.round((fixed % 1) * 60), 0, 0);
+    return d;
+  }
+  const root = document.documentElement;
+  function paint() {
+    let classic = root.dataset.bg === "classic";
+    try { classic = classic || localStorage.getItem("inbox-background") === "classic"; } catch {}
+    if (classic) { root.style.removeProperty("--sky"); root.classList.remove("skybg"); return; }
+    const s = sun(at()), [zen, hor, glow] = palette(s);
+    const mid = mix(hor, zen, 0.55);
+    const up = Math.max(0, Math.min(1, (s.alt + 6) / 12)); // how much of the sun's glow shows
+    const x = Math.round(50 + Math.max(-1, Math.min(1, s.ha / 110)) * 40), y = Math.round(100 - Math.max(0, Math.min(1, (s.alt + 4) / 70)) * 85);
+    root.style.setProperty("--sky",
+      `radial-gradient(60% 55% at ${x}% ${y}%, ${css(glow, 0.55 * up)} 0, ${css(glow, 0)} 70%),` +
+      `radial-gradient(120% 45% at ${x}% 100%, ${css(hor, 0.9)} 0, ${css(hor, 0)} 75%),` +
+      `linear-gradient(to top, ${css(hor)} 0, ${css(mid)} 45%, ${css(zen)} 100%)`);
+    // Brighter skies get a deeper glass so white text stays easy to read.
+    const lum = 0.2126 * hor[0] + 0.7152 * hor[1] + 0.0722 * hor[2];
+    root.style.setProperty("--glassA", (0.34 + 0.3 * lum).toFixed(3));
+    root.classList.add("skybg");
+  }
+  window.skyPreview = hours => { if (hours === override) return; override = hours; paint(); };
+  window.skyRestart = paint;
+  window.skyPlace = (lat, lon, utc) => { place = lat == null ? {lat: homeCity().lat, lon: homeCity().lon, utc: null} : {lat, lon, utc}; paint(); };
+  window.skyClock = () => at();
+  window.skySun = () => sun(at());
+  paint();
+  setInterval(paint, 60000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) paint(); });
+})();
+</script>
+<div class="window"><div class="glass" id="glass">
+  <aside class="sidebar" aria-label="Menu">
+    <div class="brand"><strong>Inbox</strong><span class="histnav"><button class="hist" id="histback" data-hist="-1" aria-label="Back" title="Back (⌘[)" disabled><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button><button class="hist" id="histfwd" data-hist="1" aria-label="Forward" title="Forward (⌘])" disabled><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button></span><button class="collapse" data-collapse aria-label="Collapse menu" title="Collapse menu"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="2.5"/><path d="M6.5 3v10"/></svg></button></div>
+    <button class="join" data-compose aria-label="Compose" title="Compose"><span class="lbl">Compose</span><span class="plus" aria-hidden="true">+</span></button>
+    <nav class="snav">
+      <div class="ngroup">
+        <button class="navitem" id="inboxbtn" data-gomail title="Inbox"></button>
+        <button class="navitem" id="calbtn" data-gocal title="Calendar"></button>
+        <button class="navitem" id="newsbtn" data-gonews title="News"></button>
+      </div>
+      <div class="ngroup"><h2>Inboxes</h2><div id="tabs" role="group" aria-label="Accounts"></div></div>
+      <div class="ngroup"><h2>Categories</h2><div class="catbar" id="catbar" role="group" aria-label="Categories"></div></div>
+      <div class="ngroup"><h2>Workspace</h2><button class="navitem" id="setbtn" data-settings title="Settings"></button></div>
+    </nav>
+    <div class="sfoot"><div class="status" id="status" role="status"></div></div>
+  </aside>
+  <main class="main">
+    <div class="panes" id="panes"></div>
+    <div class="bulk" id="bulk"></div>
+    <div class="undopill" id="undopill" role="status"></div>
+    <div class="orig" id="orig" hidden></div>
+    <div class="toast" id="toast" role="status" hidden></div>
+    <div class="composer" id="composer" role="dialog" aria-label="New email" hidden></div>
+  </main>
+</div></div>
+
+<script>
+const ACCOUNTS = [["all","All inboxes"],["work","Work"],["personal","Personal"],["side","Side project"]];
+const CATS = {
+  Investors:{h:155}, Contracts:{h:305}, Product:{h:200}, Home:{h:30}, Government:{h:85}, Travel:{h:240},
+  Money:{h:120}, Newsletters:{h:270}, Promotions:{h:345}, Spam:{h:250,c:.035}, Sent:{h:250,c:0}, News:{h:215}
+};
+const ADDRESS = {all: "Every inbox together", work: "you@work.example", personal: "you@gmail.example", side: "sample@side.example"};
+const GLYPHS = {
+  inbox: `<path d="M2 9.5 4 3h8l2 6.5V13H2zM2 9.5h3.5l1 1.5h3l1-1.5H14"/>`,
+  bolt: `<path d="M9 1.5 3.5 9H8l-1 5.5L12.5 7H8z"/>`,
+  home: `<path d="M2.5 7.5 8 3l5.5 4.5M4 6.5V13h8V6.5"/>`,
+  dice: `<rect x="2.5" y="2.5" width="11" height="11" rx="2.5"/><circle cx="5.7" cy="5.7" r=".8" fill="currentColor"/><circle cx="8" cy="8" r=".8" fill="currentColor"/><circle cx="10.3" cy="10.3" r=".8" fill="currentColor"/>`,
+  briefcase: `<rect x="2" y="5" width="12" height="8.5" rx="2"/><path d="M5.5 5V3.5h5V5M2 9h12"/>`,
+  heart: `<path d="M8 13.5S2.5 10.2 2.5 6.4A2.9 2.9 0 0 1 8 5a2.9 2.9 0 0 1 5.5 1.4C13.5 10.2 8 13.5 8 13.5z"/>`,
+  star: `<path d="m8 2 1.8 3.9 4.2.5-3.1 2.8.9 4.2L8 11.3l-3.8 2.1.9-4.2L2 6.4l4.2-.5z"/>`,
+  moon: `<path d="M13 9.5A5.5 5.5 0 1 1 6.5 3 4.5 4.5 0 0 0 13 9.5z"/>`,
+  leaf: `<path d="M3 13c0-6 4-10 10-10 0 6-3 10-8 10zM3 13l6-6"/>`,
+  globe: `<circle cx="8" cy="8" r="5.8"/><path d="M2.2 8h11.6M8 2.2c3 3.5 3 8.1 0 11.6M8 2.2c-3 3.5-3 8.1 0 11.6"/>`,
+  cloud: `<path d="M4.5 12.5a3 3 0 0 1-.4-6 4 4 0 0 1 7.6-.5 3.3 3.3 0 0 1 .3 6.5z"/>`,
+  at: `<circle cx="8" cy="8" r="2.6"/><path d="M10.6 5.4v3.4c0 2 3.2 1.6 3-1.1A5.8 5.8 0 1 0 11 12.9"/>`
+};
+const GEAR = `<circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6 5 5M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4"/>`;
+const svg = inner => `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${inner}</svg>`;
+/* Names and icons are a per-viewer convenience here, so they live in this browser. */
+let accountIcons = {all: "inbox", work: "bolt", personal: "home", side: "dice"};
+try {
+  const saved = JSON.parse(localStorage.getItem("quiet-workspaces") || "null");
+  if (saved) { accountIcons = {...accountIcons, ...saved.icons}; ACCOUNTS.forEach(a => { if (saved.names?.[a[0]]) a[1] = saved.names[a[0]]; }); }
+} catch {}
+function saveWorkspaces() {
+  try { localStorage.setItem("quiet-workspaces", JSON.stringify({icons: accountIcons, names: Object.fromEntries(ACCOUNTS)})); } catch {}
+}
+/* Sample mail. score = how much the AI thinks this needs you; the list is sorted by it. */
+const SEED = [
+  {id:60,a:"personal",cat:"News",score:98,from:"Daily brief",time:"7:00",subj:"What to know this morning",why:"Your daily brief.",body:"Sample issue.\n\nThree things moving today: central banks meet this week, a large chip deal is under review, and a storm is forming off the Gulf Coast.\n\nOne thing to watch: earnings from the big retailers on Thursday."},
+  {id:61,a:"personal",cat:"News",score:92,from:"Morning Brew",time:"6:12",subj:"Stocks open the week quietly",why:"Business news you follow.",body:"Sample issue.\n\nMarkets were calm heading into a busy earnings week. Oil slipped, and travel stocks had a good Friday.\n\nAlso inside: why airlines are adding fees again, and a short quiz."},
+  {id:62,a:"personal",cat:"News",score:88,from:"Axios AM",time:"5:58",subj:"The week ahead in Washington",why:"Politics and policy.",body:"Sample issue.\n\nCongress returns with a budget deadline. Here are the three votes that matter and who is likely to break with their party."},
+  {id:63,a:"work",cat:"News",score:84,from:"The Morning",time:"5:30",subj:"A closer look at the housing market",why:"World news.",body:"Sample issue.\n\nHome sales are picking up in the Midwest as rates ease. Today we look at what changed and who is being left out."},
+  {id:1,a:"work",cat:"Contracts",score:96,from:"Priya Raman",time:"9:14",subj:"Re: Re: Vendor contract, final signature",why:"Second ask, deadline Thursday, and you haven't answered.",
+   body:"Hi Alex,\n\nBumping this. Legal cleared the last redline, so all that's left is your signature. Can we close it by `Thursday`? Their quote expires `Friday` and I'd rather not reopen pricing.\n\nThe signing link is in the first email.\n\nPriya",draft:"Thanks Priya, signing today. I'll send it back this afternoon."},
+  {id:2,a:"work",cat:"Investors",score:92,from:"Elena Voss",time:"Sun",subj:"October update before Friday?",why:"An investor is waiting, and it feeds a meeting on Friday.",
+   body:"Hope the launch went well. Could you send the October numbers by `Thursday night`? I'd like to bring them to our partner meeting on Friday, especially retention and the new invite funnel.\n\nA rough version is fine.\n\nElena",draft:"Will do. You'll have them by Thursday night."},
+  {id:3,a:"side",cat:"Product",score:90,from:"App Review",time:"8:02",subj:"We need a demo account for build 122",why:"This blocks the release.",
+   body:"We were unable to review your app because we need a demo account with full access.\n\nPlease add sign-in details in App Store Connect and reply to this message. Review of build `122` will resume once the details are in place.",draft:"Demo account details are in the review notes. Please try again."},
+  {id:4,a:"personal",cat:"Home",score:86,from:"Hudson Property Group",time:"Sun",subj:"Your lease renewal offer",why:"It costs money and expires this week.",
+   body:"Your current lease ends January 31. To renew at the offered rate of `+$140/mo`, please sign by `Friday, Nov 6`. After that date the rate may change.\n\nReply to this email with any questions.",draft:"Thanks. Could we talk about the increase before I sign?"},
+  {id:5,a:"personal",cat:"Government",score:82,from:"NY Tax Department",time:"Sat",subj:"Estimated tax payment reminder",why:"Government deadline with a penalty.",
+   body:"Your next estimated tax payment of `$3,180` is due `November 15`. Payments made after this date may be subject to interest and penalties.\n\nYou can pay online through your account."},
+  {id:6,a:"personal",cat:"Travel",score:78,from:"Delta",time:"Sat",subj:"Your trip to Lisbon is this week",why:"You fly Thursday and have no seat.",
+   body:"Your flight to Lisbon leaves `Thursday at 6:40 PM`. You don't have a seat assignment yet. Choose one before check-in opens on Wednesday."},
+  {id:7,a:"work",cat:"Product",score:66,from:"Marcus Lee",time:"Sun",subj:"Design review moved to 3:00",why:"It changes your calendar tomorrow.",
+   body:"Moving tomorrow's review to `3:00` so Ana can join. Could you bring last week's onboarding funnel numbers?",draft:"Works for me. I'll bring the numbers."},
+  {id:8,a:"personal",cat:"Money",score:44,from:"Chase",time:"7:40",subj:"Your statement is ready",why:"Autopay covers it, so nothing is needed.",body:"Your October statement is available. Autopay will pay the balance on Nov 21."},
+  {id:9,a:"side",cat:"Money",score:40,from:"Twilio",time:"6:12",subj:"Invoice for October",why:"Normal monthly charge.",body:"Your October usage came to $42.10 and was charged to the card on file."},
+  {id:10,a:"work",cat:"Money",score:38,from:"Figma",time:"Sun",subj:"Your receipt from Figma",why:"Normal monthly charge.",body:"Thanks for your payment of $75.00 for the monthly plan."},
+  {id:11,a:"personal",cat:"Travel",score:36,from:"Uber",time:"Sat",subj:"Your Saturday evening trip",why:"A receipt for a finished trip.",body:"Thanks for riding. Your total was $18.40, charged to your personal card."},
+  {id:12,a:"work",cat:"Product",score:34,from:"Linear",time:"8:48",subj:"3 issues moved to In Review",why:"Status noise, and you aren't assigned.",body:"Sam moved three issues on the Onboarding project to In Review."},
+  {id:13,a:"work",cat:"Product",score:32,from:"GitHub",time:"8:31",subj:"All checks have passed",why:"Automated, and needs nothing from you.",body:"All checks passed on your pull request. It is ready for review."},
+  {id:14,a:"side",cat:"Product",score:30,from:"App Store Connect",time:"Sun",subj:"Your weekly trends report",why:"Routine report.",body:"Your apps had 1,204 first-time downloads last week, up 6%."},
+  {id:15,a:"work",cat:"Newsletters",score:26,from:"Lenny's Newsletter",time:"7:02",subj:"How teams price consumer apps",why:"You usually skip these.",body:"This week: what twelve consumer teams learned from their first paywall."},
+  {id:16,a:"personal",cat:"News",score:70,from:"Stratechery",time:"Sun",subj:"The chip supply squeeze",why:"You usually skip these.",body:"Today's update looks at what tighter supply means for the next phone cycle."},
+  {id:17,a:"personal",cat:"News",score:66,from:"The Browser",time:"Sun",subj:"Five long reads for the week",why:"You usually skip these.",body:"Glass, medieval bookkeeping, and a very long walk across Mongolia."},
+  {id:18,a:"personal",cat:"Travel",score:20,from:"Delta",time:"Fri",subj:"Fare sale to Lisbon",why:"Marketing, and you already have a ticket.",body:"Fall fares from $389 round trip. Book by Tuesday."},
+  {id:19,a:"work",cat:"Promotions",score:16,from:"Notion",time:"Fri",subj:"Try the new meeting notes",why:"Marketing.",body:"Meeting notes now write themselves. Start a free trial for your team."},
+  {id:20,a:"personal",cat:"Promotions",score:14,from:"Everlane",time:"Fri",subj:"30% off outerwear",why:"Marketing.",body:"The Coat Sale is here. Three days only."},
+  {id:21,a:"personal",cat:"Promotions",score:12,from:"Sonos",time:"Thu",subj:"Early holiday pricing",why:"Marketing.",body:"Save on Era speakers before the holiday rush."},
+  {id:22,a:"work",cat:"Spam",score:6,from:"Growth Partners",time:"Thu",subj:"Quick question, Alex",why:"Cold pitch from an unknown sender.",body:"We help founders get 10x more leads. Do you have 15 minutes this week?"},
+  {id:23,a:"side",cat:"Spam",score:5,from:"App Promo Pro",time:"Thu",subj:"100k installs guaranteed",why:"Cold pitch from an unknown sender.",body:"Rank number one on the App Store in seven days, guaranteed."},
+  {id:24,a:"personal",cat:"Spam",score:3,from:"Rewards Center",time:"Wed",subj:"You have won a gift card",why:"Looks like a scam.",body:"Claim your $500 gift card now. Offer ends tonight."}
+];
+/* Sample calendar. Day 0 is Monday, Nov 2; s and m are minutes. The sample clock reads 2:05 PM. */
+/* The week shows the whole day; HOUR is how tall an hour is, which pinching changes (see calZoom). */
+const HOUR_MIN = 11, HOUR_MAX = 200, HOUR_DEFAULT = 44, GRID_START = 0, GRID_END = 24 * 60;
+let HOUR = HOUR_DEFAULT;
+try { const z = +localStorage.getItem("inbox-cal-hour"); if (z >= HOUR_MIN && z <= HOUR_MAX) HOUR = z; } catch {}
+const NOW = {day: 0, min: 14 * 60 + 5};
+const yes = (...names) => names.map(n => ({n, st: "Going"}));
+const ev = o => ({guests: [], repeat: "none", remind: "10", busy: "busy", allDay: false, loc: "", desc: "", invite: true, m: 60, ...o});
+const SEED_EVENTS = [
+  {id:1,day:0,s:600,m:15,n:"Team standup",a:"work",via:"Google Meet",code:"kqv-msxt-bnd",repeat:"weekdays",guests:yes("Sam Ortiz","Ana Reyes")},
+  {id:2,day:0,s:750,n:"Lunch with Sam",a:"personal",loc:"Via Carota",guests:yes("Sam Ortiz")},
+  {id:3,day:0,s:870,m:30,n:"Release check",a:"side",via:"Google Meet",code:"hzp-tyrw-ceo",guests:yes("Sam Ortiz","Ana Reyes")},
+  {id:4,day:0,s:960,m:45,n:"Investor call",a:"work",via:"Zoom",code:"88213400917",org:"Elena Voss",rsvp:"Yes",guests:yes("Elena Voss")},
+  {id:11,day:0,s:1050,m:30,n:"1:1 with Ana",a:"work",via:"Google Meet",code:"pqt-zmwa-kel",guests:yes("Ana Reyes")},
+  {id:12,day:0,s:1110,m:20,n:"Pricing check-in",a:"side",via:"Zoom",code:"86644120391",guests:yes("Sam Ortiz")},
+  {id:5,day:0,s:1140,n:"Dinner at home",a:"personal"},
+  {id:6,day:1,s:900,n:"Design review",a:"work",via:"Google Meet",code:"wmd-qjlf-vak",guests:yes("Marcus Lee","Ana Reyes")},
+  {id:7,day:2,s:690,m:30,n:"Vendor contract call",a:"work",via:"Zoom",code:"84120077362",guests:yes("Priya Raman")},
+  {id:8,day:3,s:1120,m:180,n:"Flight to Lisbon",a:"personal",loc:"JFK Terminal 4"},
+  {id:9,day:4,s:540,m:30,n:"App review sync",a:"side",via:"Google Meet",code:"rbn-xgus-ipt",guests:yes("Sam Ortiz")},
+  {id:10,day:5,s:0,n:"Lisbon",a:"personal",allDay:true}
+].map(ev);
+const ACCOUNT_HUE = {work:240, personal:330, side:165};
+// Any other account (from settings.json) gets a hue by its place in the list.
+const accountHue = k => ACCOUNT_HUE[k] ?? [240, 330, 165, 30, 280, 100][Math.max(0, ACCOUNTS.findIndex(a => a[0] === k) - 1) % 6];
+const REPEATS = {none:"Does not repeat", daily:"Every day", weekdays:"Every weekday", weekly:"Every week"};
+const REMINDERS = {none:"No alert", 10:"10 minutes before", 30:"30 minutes before", 60:"1 hour before", 1440:"1 day before"};
+const PEOPLE = ["Priya Raman", "Elena Voss", "Marcus Lee", "Ana Reyes", "Sam Ortiz"];
+const DIVIDER = '<div class="divider" role="separator" aria-orientation="vertical" aria-label="Resize the reading pane" tabindex="0"><span class="divider-handle"><img class="handle-resizer" alt="" draggable="false" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round' opacity='.9'%3E%3Cpath d='M19 16 11 24l8 8M29 16l8 8-8 8'/%3E%3C/svg%3E"></span></div>';
+const ICONS = {
+  news: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><rect x="2" y="3" width="12" height="10.5" rx="2"/><path d="M4.5 6h4M4.5 8.5h7M4.5 11h7"/></svg>`,
+  flame: `<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5c.5 2.5 3.5 3.8 3.5 7.2A3.5 3.5 0 0 1 8 14.5a3.5 3.5 0 0 1-3.5-5.8c0-1.3.7-2.2 1.4-3 .2 1.2.8 1.7 1.2 1.7C7.7 5.3 7.2 3.4 8 1.5z"/></svg>`,
+  calendar: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="1.5" y="3" width="13" height="11.5" rx="2.5"/><path d="M1.5 6.5h13M5 1.5v3M11 1.5v3"/></svg>`,
+  inbox: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="1.5" y="3" width="13" height="10" rx="2.5"/><path d="M2 4.5 8 9l6-4.5"/></svg>`
+};
+const WAIT_BELOW = 50;
+const ALREADY_READ = [3, 7, 10, 13, 17, 21];
+const STARRED = [2, 15];
+
+const fresh = () => SEED.map(m => ({...m, unread: !ALREADY_READ.includes(m.id), star: STARRED.includes(m.id), deleted: false}));
+let mail = fresh();
+// Unread is the home inbox. All mail is where everything sits.
+let acct = "all", cat = "Unread", sel = 1, peek = false, undoFn = null, lastPick = null, view = "mail";
+let undoLabel = "", undoAt = 0, undoTimer = null;
+let composing = null, nextMail = 1000;
+let events = SEED_EVENTS.map(e => ({...e})), week = 0, draft = null, drag = null, nextEvent = 100, toastTimer = null, evUndo = null;
+const picks = new Set();
+const $ = id => document.getElementById(id);
+const acctName = k => ACCOUNTS.find(x => x[0] === k)?.[1] ?? ADDRESS[k] ?? k;
+const hue = m => { const c = CATS[m.cat] || CATS.Product; return `--h:${c.h};--c:${c.c ?? .1}`; };
+const inAcct = m => !m.deleted && !m.archived && !m.spam && (acct === "all" || m.a === acct);
+const inCat = m => view === "news" ? m.cat === "News"
+  : !cat ? m.cat !== "Sent" && m.cat !== "News"
+  : cat === "Unread" ? (m.unread || m.star || m.id === sel) && m.cat !== "Sent" && m.cat !== "News"
+  : cat === "Starred" ? m.star : m.cat === cat;
+/* Sample streak: six days through yesterday. Reading one issue counts today. */
+const streak = {days: 6, best: 14, today: false};
+const STREAK_WEEK = ["T", "W", "T", "F", "S", "S", "M"];
+function countNewsToday() {
+  if (streak.today) return;
+  streak.today = true; streak.days += 1; streak.best = Math.max(streak.best, streak.days);
+  toast(`${streak.days} day streak. Today counts.`);
+}
+function newsHTML(list) {
+  const card = `<div class="streak"><strong>${streak.days}</strong><div><b>day streak</b><small>${streak.today ? "Today counts. See you tomorrow." : "Read one issue today to keep it going."} Best: ${streak.best}.</small></div>
+    <div class="sweek" role="img" aria-label="Last 7 days of reading">${STREAK_WEEK.map((d, i) => `<span class="sday ${i < 6 || streak.today ? "lit" : ""} ${i === 6 ? "today" : ""}"><u></u>${d}</span>`).join("")}</div></div>`;
+  const cur = mail.find(m => m.id === sel);
+  return `<div class="newscol">${card}<div class="list ${picks.size ? "selecting" : ""}" id="list">${list.map(rowHTML).join("")}</div></div>${DIVIDER}
+    <section class="reader ${peek ? "peek" : ""}" data-key="${cur ? cur.id : ""}">${readerHTML(cur)}</section>`;
+}
+let search = "", searchHits = null, searchTimer = 0, searching = "", searchMore = false, searchLimit = 60;
+const plainText = s => String(s ?? "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+const matchesSearch = m => !search || (plainText(m.from) + " " + plainText(m.fromAddr) + " " + plainText(m.subj) + " " + plainText(m.body)).toLowerCase().includes(search.toLowerCase());
+const shown = () => (searchHits
+    ? mail.filter(m => (searchHits.has(m.id) || (!m.fromSearch && matchesSearch(m))) && !m.deleted && !m.archived && !m.spam).sort((a, b) => (b.ts || 0) - (a.ts || 0))
+    // Typing searches every email, whatever tab or inbox you're on; newest first.
+    : search ? mail.filter(m => !m.deleted && !m.archived && !m.spam && !m.fromSearch && matchesSearch(m)).sort((a, b) => (b.ts || 0) - (a.ts || 0) || b.score - a.score)
+    : mail.filter(m => inAcct(m) && !m.fromSearch && inCat(m) && matchesSearch(m)).sort(byImportance));
+/* Unread: mail that needs you by importance, then starred mail you've already read, newest first (a star keeps it
+   here, it doesn't lift it), then the rest by importance. */
+const keptStar = m => cat === "Unread" && m.star && !m.unread;
+const tier = m => keptStar(m) ? 1 : m.score >= WAIT_BELOW ? 0 : 2;
+const byImportance = (a, b) => tier(a) - tier(b) || (tier(a) === 1 ? (b.ts || 0) - (a.ts || 0) : b.score - a.score);
+const initials = s => s.split(/\s+/).filter(w => /^[A-Za-z]/.test(w)).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+const inline = s => s.replace(/`([^`]+)`/g, "<code>$1</code>");
+const nolinks = s => s.replace(/\n+/g, " ");
+
+/* Back and forward through the emails you've opened, like a browser. Keys survive a refresh (the numeric ids don't). */
+const histKey = m => m.gmailId ? m.a + ":" + m.gmailId : "id:" + m.id;
+let hist = [], histAt = -1, histMoving = false;
+function noteHistory(m) {
+  if (!m || histMoving) return;
+  const key = histKey(m);
+  if (hist[histAt] === key) return;
+  hist = hist.slice(0, histAt + 1).filter(k => k !== key);
+  hist.push(key);
+  if (hist.length > 100) hist.shift();
+  histAt = hist.length - 1;
+}
+function paintHistory() {
+  const live = k => mail.some(m => histKey(m) === k && !m.deleted);
+  if ($("histback")) $("histback").disabled = !hist.slice(0, Math.max(histAt, 0)).some(live);
+  if ($("histfwd")) $("histfwd").disabled = !hist.slice(histAt + 1).some(live);
+}
+function goHistory(step) {
+  for (let i = histAt + step; i >= 0 && i < hist.length; i += step) {
+    const m = mail.find(x => histKey(x) === hist[i] && !x.deleted);
+    if (!m) continue; // deleted since: skip over it
+    histAt = i;
+    search = ""; searchHits = null; draft = null;
+    view = m.cat === "News" ? "news" : "mail";
+    if (view === "news") cat = null;
+    sel = m.id; peek = true;
+    if (!shown().some(x => x.id === m.id)) { acct = "all"; if (!shown().some(x => x.id === m.id)) cat = ""; }
+    histMoving = true;
+    try { render(); } finally { histMoving = false; }
+    return;
+  }
+}
+
+/* When the open email is acted on, open the next one that passes `ok`. */
+function advance(ids, ok) {
+  if (!ids.includes(sel)) return;
+  const list = shown(), at = list.findIndex(m => m.id === sel);
+  const next = list.slice(at + 1).concat(list.slice(0, at)).find(m => !ids.includes(m.id) && ok(m));
+  if (next) sel = next.id;
+}
+function apply(hit, field, value) {
+  hit.forEach(m => { m[field] = value; });
+  window.syncFlags?.(hit, field, value);
+  undoFn = hit.length ? () => { hit.forEach(m => { m[field] = !value; }); window.syncFlags?.(hit, field, !value); } : null;
+  const n = hit.length, what = n === 1 ? "email" : `${n} emails`;
+  undoLabel = field === "archived" ? `Archived ${what}` : field === "spam" ? `Reported ${what} as spam` : field === "deleted" ? `Deleted ${what}` : field === "unread" ? (value ? `Marked ${what} unread` : `Marked ${what} read`) : "Done";
+  undoAt = Date.now();
+  picks.clear(); render();
+}
+function markRead(ids) { const hit = mail.filter(m => m.unread && ids.includes(m.id)); advance(ids, m => m.unread); if (view === "news" && hit.length) countNewsToday(); apply(hit, "unread", false); }
+function markUnread(ids) { apply(mail.filter(m => !m.unread && ids.includes(m.id)), "unread", true); }
+function remove(ids) { const hit = mail.filter(m => ids.includes(m.id)); advance(ids, () => true); apply(hit, "deleted", true); }
+/* The email as sent, in a sandbox: no scripts run and nothing inside can reach the app. */
+function showOriginal(id) {
+  const m = mail.find(x => x.id === id), esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  $("orig").innerHTML = `<div class="orighead"><button class="act" data-closeorig>← Back</button><span>Original email</span></div><iframe sandbox="" title="Original email"></iframe>`;
+  $("orig").querySelector("iframe").srcdoc = `<!doctype html><meta charset="utf-8"><body style="margin:0;padding:32px;font:15px/1.55 -apple-system,Helvetica,Arial,sans-serif;color:#202124;background:#fff">
+    <div style="max-width:640px;margin:auto"><h2 style="font-size:20px;font-weight:600;margin:0 0 14px">${esc(m.subj)}</h2>
+    <div style="font-size:13px;color:#5f6368;border-bottom:1px solid #e3e3e3;padding-bottom:14px;margin-bottom:20px">From: ${esc(m.from)}<br>To: ${esc(acctName(m.a))}<br>Date: ${esc(m.time)}</div>
+    <div style="white-space:pre-wrap">${esc(m.body.replace(/\x60/g, ""))}</div></div>`;
+  $("orig").hidden = false; $("orig").querySelector("button").focus();
+}
+function closeOriginal() { $("orig").hidden = true; $("orig").innerHTML = ""; }
+/* After reading, marking or deleting, a glass Undo floats at the bottom of the list for a few seconds. */
+function paintUndo() {
+  const pill = $("undopill");
+  if (!pill) return;
+  const live = undoFn && Date.now() - undoAt < 7000 && !picks.size;
+  pill.innerHTML = live ? `<div class="undoglass"><span>${undoLabel}</span><button data-undo>Undo</button></div>` : "";
+  clearTimeout(undoTimer);
+  if (live) undoTimer = setTimeout(paintUndo, 7000 - (Date.now() - undoAt) + 30);
+}
+function toggleStar(id) { const m = mail.find(x => x.id === id); m.star = !m.star; window.syncFlags?.([m], "star", m.star); render(); }
+function togglePick(id, range) {
+  const list = shown().map(m => m.id);
+  if (range && lastPick !== null && list.includes(lastPick)) {
+    const [a, b] = [list.indexOf(lastPick), list.indexOf(id)].sort((x, y) => x - y);
+    list.slice(a, b + 1).forEach(x => picks.add(x));
+  } else picks.has(id) ? picks.delete(id) : picks.add(id);
+  lastPick = id; render();
+}
+/* Not important / Important: move it now, and tell the ranker so similar mail sorts this way next time. */
+function rerank(id, score) {
+  const m = mail.find(x => x.id === id), before = m.score, down = score < before;
+  m.score = score;
+  undoFn = () => { m.score = before; window.sendFeedback?.(m, "undo"); };
+  undoLabel = down ? "Marked not important" : "Marked important"; undoAt = Date.now();
+  window.sendFeedback?.(m, down ? "down" : "up");
+  render();
+}
+
+function rowHTML(m) {
+  return `<article class="row ${m.id === sel ? "sel" : ""} ${m.unread ? "" : "read"} ${picks.has(m.id) ? "picked" : ""}" style="${hue(m)}">
+    ${m.unread ? `<span class="dot" role="img" aria-label="Unread"></span>` : ""}
+    <button class="pick" data-pick="${m.id}" aria-pressed="${picks.has(m.id)}" aria-label="Select ${m.from}" title="Select"><span class="av" aria-hidden="true">${initials(m.from)}</span><span class="box" aria-hidden="true">✓</span></button>
+    <button class="hit" data-sel="${m.id}" aria-current="${m.id === sel}">
+      <span style="min-width:0;display:block">
+        <span class="top"><span class="from">${m.from}</span><span class="when">${acct === "all" || search || searchHits ? acctName(m.a) + " · " : ""}${m.time}</span></span>
+        <span class="subj" style="display:block">${m.subj}</span>
+        <span class="snip">${inline(nolinks(m.body))}</span>
+        ${(files => files.length ? `<span class="clips">${files.slice(0, 2).map(f => `<span class="clip" title="${f}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M10.5 5.5 6 10a1.4 1.4 0 0 0 2 2l5-5a2.8 2.8 0 0 0-4-4L4 8a4.2 4.2 0 0 0 6 6l3.5-3.5"/></svg><span>${f}</span></span>`).join("")}${files.length > 2 ? `<span class="clip more">+${files.length - 2}</span>` : ""}</span>` : "")([...new Set((m.files || []).filter(f => !/\.ics$/i.test(f)))])}
+      </span>
+    </button>
+    <div class="tools">
+      <button class="fav ${m.star ? "on" : ""}" data-star="${m.id}" aria-pressed="${m.star}" aria-label="Star" title="Star">${m.star ? "★" : "☆"}</button>
+      <span class="hoveracts">${m.score >= WAIT_BELOW ? `<button class="done" data-rank="${m.id}" data-score="30" title="Rank this and mail like it lower">Not important</button>` : `<button class="done" data-rank="${m.id}" data-score="80" title="Rank this and mail like it higher">Important</button>`}${m.unread
+        ? `<button class="done" data-read="${m.id}">Mark read</button>`
+        : `<button class="done" data-unread="${m.id}">Mark unread</button>`}${m.score < WAIT_BELOW && canUnsub(m) ? (k => `<button class="done" data-unsub="${m.id}" ${unsubBusy.has(k) || unsubbed.has(k) ? "disabled" : ""} title="Unsubscribe from ${m.from}">${unsubBusy.has(k) ? "Unsubscribing…" : unsubbed.has(k) ? "Unsubscribed" : "Unsubscribe"}</button>`)(senderKey(m)) : ""}<button class="done delbtn" data-del="${m.id}" aria-label="Delete ${m.from}">Delete</button></span>
+    </div>
+  </article>`;
+}
+
+const inAcctEvents = e => acct === "all" || e.a === acct;
+const joinHTML = e => `<a class="join" href="${e.via === "Zoom" ? "https://zoom.us/join" : "https://meet.google.com/"}" target="_blank" rel="noopener">Join</a>`;
+const attr = s => String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+const dateOf = day => new Date(2026, 10, 2 + day);
+const isoOf = day => { const d = dateOf(day); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const dayOf = iso => { const [y, m, d] = iso.split("-").map(Number); return Math.round((new Date(y, m - 1, d) - dateOf(0)) / 864e5); };
+const clock = min => { const h = Math.floor(min / 60) % 24; return `${h % 12 || 12}${min % 60 ? ":" + String(min % 60).padStart(2, "0") : ""}`; };
+const clockFull = min => `${clock(min)} ${Math.floor(min / 60) % 24 < 12 ? "AM" : "PM"}`;
+const hhmm = min => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+const fromHHMM = s => { const [h, m] = s.split(":").map(Number); return h * 60 + m; };
+const linkText = e => e.via === "Zoom" ? `zoom.us/j/${e.code}` : `meet.google.com/${e.code}`;
+const guestNames = e => e.guests.map(g => g.n).join(", ");
+function occurs(e, day) {
+  if (day < e.day) return false;
+  if (day === e.day) return true;
+  if (e.repeat === "daily") return true;
+  if (e.repeat === "weekly") return (day - e.day) % 7 === 0;
+  if (e.repeat === "weekdays") return ![0, 6].includes(dateOf(day).getDay());
+  return false;
+}
+const isPast = (e, day) => day < NOW.day || (day === NOW.day && !e.allDay && e.s + e.m <= NOW.min);
+function soonLabel(e) {
+  const left = e.s - NOW.min, h = Math.floor(left / 60), m = left % 60;
+  return `In ${h ? h + " hr " : ""}${m ? m + " min" : ""}`.trim();
+}
+/* Unsubscribe: remembered per sender, so every email from them shows it. The live app replaces unsubscribe()
+   with the real thing (one-click, an unsubscribe email, or working through their page in a browser window). */
+const senderKey = m => (m.fromAddr || m.from || "").toLowerCase();
+const canUnsub = m => m.cat !== "Sent";
+const unsubBusy = new Set();
+let unsubbed = new Set();
+try { unsubbed = new Set(JSON.parse(localStorage.getItem("inbox-unsubscribed") || "[]")); } catch {}
+function markUnsubscribed(m) {
+  unsubbed.add(senderKey(m));
+  try { localStorage.setItem("inbox-unsubscribed", JSON.stringify([...unsubbed])); } catch {}
+}
+async function unsubscribe(m) {
+  markUnsubscribed(m);
+  toast(`Unsubscribed from ${m.from}.`);
+  render();
+}
+
+function toast(text, undo) {
+  evUndo = undo || null;
+  $("toast").innerHTML = `<span>${attr(text)}</span>${undo ? `<button data-evundo>Undo</button>` : ""}`;
+  $("toast").hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { $("toast").hidden = true; }, 5000);
+}
+
+/* Today: what came in, what needs doing, and what's in the news. The live app has Claude write it from your
+   unread mail and today's news issues; refs point at emails ("account:gmailId" live, the plain id here). */
+let today = {
+  at: "1:58 PM",
+  line: "A contract signature and an investor update both need you by Thursday; App Review is blocking build 122.",
+  tasks: [
+    {t: "Sign the vendor contract", due: "Thu", ref: "1"},
+    {t: "Send Elena the October numbers", due: "Thu night", ref: "2"},
+    {t: "Add a demo account for App Review", due: "Today", ref: "3"},
+    {t: "Sign the lease renewal or ask about the rate", due: "Fri", ref: "4"},
+    {t: "Pay estimated tax, $3,180", due: "Nov 15", ref: "5"},
+  ],
+  news: [
+    {h: "Central banks meet this week; markets are calm ahead of it", ref: "60"},
+    {h: "Congress returns with a budget deadline and three key votes", ref: "62"},
+    {h: "A large chip deal is under review as supply tightens", ref: "16"},
+    {h: "Midwest home sales pick up as mortgage rates ease", ref: "63"},
+  ],
+};
+let todayDone = new Set();
+try { todayDone = new Set(JSON.parse(localStorage.getItem("inbox-today-done") || "[]")); } catch {}
+let todayFolded = false;
+try { todayFolded = localStorage.getItem("inbox-today-fold") === "1"; } catch {}
+const byRef = ref => mail.find(m => (m.gmailId ? m.a + ":" + m.gmailId : String(m.id)) === ref);
+const todayRef = m => m.gmailId ? m.a + ":" + m.gmailId : String(m.id);
+function todayTasks() {
+  return (today?.tasks || []).map(t => ({...t, m: byRef(t.ref)})).filter(t => !t.m || inAcct(t.m) || t.m.archived || t.m.deleted)
+    .filter(t => !t.m || acct === "all" || t.m.a === acct)
+    .map(t => ({...t, done: todayDone.has(t.ref) || !!(t.m && (t.m.archived || t.m.deleted))}));
+}
+function toggleTodayTask(ref) {
+  const m = byRef(ref), was = todayDone.has(ref);
+  was ? todayDone.delete(ref) : todayDone.add(ref);
+  try { localStorage.setItem("inbox-today-done", JSON.stringify([...todayDone].slice(-200))); } catch {}
+  if (was) return render();
+  // Ticking a task off also clears its email from Unread; Undo puts both back.
+  const saveDone = () => { try { localStorage.setItem("inbox-today-done", JSON.stringify([...todayDone].slice(-200))); } catch {} };
+  let undoRead = null;
+  if (m?.unread) { markRead([m.id]); undoRead = undoFn; }
+  undoFn = () => { todayDone.delete(ref); saveDone(); undoRead?.(); };
+  undoLabel = "Done"; undoAt = Date.now();
+  render();
+}
+function todayHTML() {
+  if (cat && cat !== "Unread") return "";
+  const d = dateOf(NOW.day);
+  const date = d.toLocaleDateString("en-US", {weekday: "long", month: "short", day: "numeric"});
+  const unread = mail.filter(m => inAcct(m) && m.unread && m.cat !== "Sent" && m.cat !== "News");
+  const need = unread.filter(m => m.score >= WAIT_BELOW).length;
+  const cats = {};
+  unread.filter(m => m.score < WAIT_BELOW).forEach(m => { cats[m.cat] = (cats[m.cat] || 0) + 1; });
+  const meetsLeft = events.filter(e => !e.allDay && occurs(e, NOW.day) && e.s > NOW.min && inAcctEvents(e)).length;
+  const tasks = todayTasks(), left = tasks.filter(t => !t.done).length;
+  const news = (today?.news || []).map(n => ({...n, m: byRef(n.ref)}));
+  const taskHTML = !today ? `<p class="tquiet">Reading your mail…</p>`
+    : !tasks.length ? `<p class="tquiet">Nothing needs you. Nice.</p>`
+    : `<ul class="tlist">${tasks.map(t => `<li class="${t.done ? "done" : ""}">
+        <button class="tcheck" data-todaydone="${attr(t.ref)}" aria-pressed="${t.done}" aria-label="${t.done ? "Not done" : "Done"}: ${t.t}" title="${t.done ? "Not done" : "Done, and mark the email read"}">✓</button>
+        ${t.m ? `<button class="tgo" data-sel="${t.m.id}">${t.t}<i>${t.m.from}${acct === "all" ? " · " + acctName(t.m.a) : ""}</i></button>` : `<span class="tgo">${t.t}</span>`}
+        ${t.due ? `<span class="tdue">${t.due}</span>` : ""}</li>`).join("")}</ul>`;
+  const newsHTML = !today ? `<p class="tquiet">Reading today's issues…</p>`
+    : !news.length ? `<p class="tquiet">No news issues yet today.</p>`
+    : `<ul class="tlist tnews">${news.map(n => `<li class="${n.m && !n.m.unread ? "seen" : ""}"><span class="tbul" aria-hidden="true"></span>
+        ${n.m ? `<button class="tgo" data-todaynews="${n.m.id}">${n.h}<i>${n.m.from}</i></button>` : `<span class="tgo">${n.h}</span>`}</li>`).join("")}</ul>`;
+  const counts = `<span><b>${unread.length}</b> unread · <b>${need}</b> need you${meetsLeft ? ` · <b>${meetsLeft}</b> meeting${meetsLeft === 1 ? "" : "s"} left` : ""}</span>` +
+    Object.entries(cats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([c, n]) => `<button data-cat="${c}" style="--h:${CATS[c]?.h ?? 250}" title="Show ${c}"><u></u>${n} ${c}</button>`).join("");
+  return `<section class="todaycard ${todayFolded ? "folded" : ""}" aria-label="Today">
+    <div class="tdhead"><h2>Today</h2><small>${date}${today?.at ? " · read at " + today.at : ""}${tasks.length ? ` · ${left ? left + " to do" : "all done"}` : ""}</small>
+      <button class="tfold" data-todayfold aria-expanded="${!todayFolded}">${todayFolded ? "Show" : "Hide"}</button></div>
+    ${today?.line ? `<p class="tline">${today.line}</p>` : ""}
+    <div class="tcols"><div><h3>To do</h3>${taskHTML}</div><div><h3>In the news</h3>${newsHTML}</div></div>
+    <div class="tcount">${counts}</div>
+  </section>`;
+}
+
+/* Today's next meetings sit above the mail, each with its join link. */
+function meetHTML() {
+  if (cat && cat !== "Unread") return "";
+  const soon = events.filter(e => e.via && !e.allDay && occurs(e, NOW.day) && e.s > NOW.min && inAcctEvents(e)).sort((a, b) => a.s - b.s);
+  if (!soon.length) return "";
+  return `<div class="meets" role="group" aria-label="Upcoming meetings">${soon.map(e => `<article class="meetcard">
+    <button class="mhit" data-view aria-label="${attr(e.n) || "Untitled"} at ${clockFull(e.s)}, open calendar">
+      <b>${attr(e.n) || "Untitled"}</b>
+      <small>${soonLabel(e)} · ${clockFull(e.s)}</small>
+      <i>${e.m} min · ${e.via}${acct === "all" ? " · " + acctName(e.a) : ""}</i>
+    </button>
+    ${joinHTML(e)}
+  </article>`).join("")}</div>`;
+}
+
+/* Events on one day, including the one being edited, laid out side by side when they overlap. */
+function dayEvents(day) {
+  const list = events.filter(e => !(draft && e.id === draft.id) && occurs(e, day) && inAcctEvents(e));
+  if (draft && occurs(draft, day)) list.push(draft);
+  return list;
+}
+function placed(list) {
+  const timed = list.filter(e => !e.allDay).sort((a, b) => a.s - b.s), lanes = [];
+  const out = timed.map(e => {
+    let lane = lanes.findIndex(end => end <= e.s);
+    if (lane < 0) lane = lanes.length;
+    lanes[lane] = e.s + e.m;
+    return {e, lane};
+  });
+  return out.map(p => ({...p, lanes: Math.max(1, ...out.filter(o => o.e.s < p.e.s + p.e.m && p.e.s < o.e.s + o.e.m).map(o => o.lane + 1))}));
+}
+function weekHTML() {
+  const days = Array.from({length: 7}, (_, i) => week * 7 + i), height = (GRID_END - GRID_START) / 60 * HOUR;
+  // How much detail fits: every few hours when folded, half and quarter hours when stretched.
+  const step = HOUR < 16 ? 360 : HOUR < 24 ? 180 : HOUR < 34 ? 120 : HOUR >= 150 ? 15 : HOUR >= 84 ? 30 : 60;
+  const hours = Array.from({length: Math.floor((GRID_END - GRID_START) / step) - 1}, (_, i) => GRID_START + (i + 1) * step);
+  const y = min => (min - GRID_START) / 60 * HOUR;
+  const head = days.map(day => {
+    const d = dateOf(day), label = d.toLocaleDateString("en-US", {weekday: "short"}) + " " + d.getDate();
+    const chips = dayEvents(day).filter(e => e.allDay).map(e => `<button class="adchip" ${e === draft ? "" : `data-ev="${e.id}"`} style="--h:${accountHue(e.a)}">${attr(e.n) || "New event"}</button>`).join("");
+    return `<div class="dh ${day === NOW.day ? "today" : ""}">${label}${chips}</div>`;
+  }).join("");
+  const cols = days.map(day => {
+    const cells = placed(dayEvents(day)).map(({e, lane, lanes}) => {
+      const top = y(Math.max(e.s, GRID_START)), h = Math.max(HOUR < 24 ? 5 : 20, e.m / 60 * HOUR - 2), mine = e === draft;
+      return `<button class="cev ${isPast(e, day) && !mine ? "past" : ""} ${mine ? "on" : ""} ${h < 15 ? "thin" : ""}" ${mine ? "" : `data-ev="${e.id}"`} style="--h:${accountHue(e.a)};top:${top}px;height:${h}px;left:${lane / lanes * 100}%;width:${100 / lanes}%">
+        ${h >= 15 ? `<b>${attr(e.n) || "New event"}</b>` : ""}${h >= 33 ? `<time>${clockFull(e.s)}</time>` : ""}${h >= 48 && e.guests.length ? `<small>${attr(guestNames(e))}</small>` : ""}</button>`;
+    }).join("");
+    const now = day === NOW.day ? `<div class="nowline" style="top:${y(NOW.min)}px"></div>` : "";
+    return `<div class="dcol" data-day="${day}">${cells}${now}</div>`;
+  }).join("");
+  return `<div class="dh"></div>${head}<div class="gutter">${hours.map(h => `<span class="hl ${h % 60 ? "sub" : ""}" style="top:${y(h)}px">${clockFull(h)}</span>`).join("")}</div>${cols}`.replace(/^/, `<style>.dgrid{--grid-h:${height}px;--hour:${HOUR}px;--fine:${HOUR >= 84 ? 1 : 0}}</style>`);
+}
+function weekTitle() {
+  const a = dateOf(week * 7), b = dateOf(week * 7 + 6), f = d => d.toLocaleDateString("en-US", {month: "short"});
+  return a.getMonth() === b.getMonth() ? `${f(a)} ${a.getDate()}–${b.getDate()}` : `${f(a)} ${a.getDate()} – ${f(b)} ${b.getDate()}`;
+}
+const option = (value, label, on) => `<option value="${value}" ${on ? "selected" : ""}>${label}</option>`;
+function editorHTML() {
+  const e = draft;
+  if (!e) return "";
+  const guests = e.guests.map((g, i) => `<div class="gchip"><span>${attr(g.n)} <small>${g.st}</small></span><button data-rmguest="${i}" aria-label="Remove ${attr(g.n)}">✕</button></div>`).join("");
+  const fresh = e.guests.some(g => g.st === "Invite to send");
+  return `<aside class="editor" aria-label="Event details">
+    <input class="ftitle" id="f-title" data-f="n" placeholder="Add title" aria-label="Title" value="${attr(e.n)}">
+    <div class="frow"><span>When</span><div class="fstack">
+      <input class="fi" type="date" id="f-date" data-f="date" aria-label="Date" value="${isoOf(e.day)}">
+      ${e.allDay ? "" : `<div class="fline"><input class="fi" type="time" step="900" id="f-start" data-f="start" aria-label="Start time" value="${hhmm(e.s)}"><input class="fi" type="time" step="900" id="f-end" data-f="end" aria-label="End time" value="${hhmm((e.s + e.m) % 1440)}"></div>`}
+      <label class="fcheck"><input type="checkbox" id="f-allday" data-f="allDay" ${e.allDay ? "checked" : ""}> All day</label>
+      <select class="fi" id="f-repeat" data-f="repeat" aria-label="Repeat">${Object.entries(REPEATS).map(([k, v]) => option(k, v, k === e.repeat)).join("")}</select>
+    </div></div>
+    <div class="frow"><span>Video</span><div class="fstack">${e.via
+      ? `<div class="fline"><span class="link" style="flex:1;min-width:0">${linkText(e)}</span>${joinHTML(e)}</div><div class="fline"><button class="act" data-copy>Copy link</button><button class="act" data-rmmeet>Remove</button></div>`
+      : `<div class="fline"><button class="act" data-addmeet>Add Google Meet</button></div>`}</div></div>
+    <div class="frow"><span>Guests</span><div class="fstack">
+      <input class="fi" id="f-guest" list="people" placeholder="Add people or emails" aria-label="Add guest"><datalist id="people">${PEOPLE.map(p => `<option value="${p}">`).join("")}</datalist>
+      ${guests}
+      <label class="fcheck"><input type="checkbox" id="f-invite" data-f="invite" ${e.invite ? "checked" : ""}> Guests can invite others</label>
+    </div></div>
+    ${e.org ? `<div class="frow"><span>Going?</span><div class="fline">${["Yes", "Maybe", "No"].map(r => `<button class="act ${e.rsvp === r ? "on" : ""}" data-rsvp="${r}">${r}</button>`).join("")}</div></div>` : ""}
+    <div class="frow"><span>Where</span><input class="fi" id="f-loc" data-f="loc" placeholder="Add location" aria-label="Location" value="${attr(e.loc)}"></div>
+    <div class="frow"><span>Notes</span><textarea class="fi" id="f-desc" data-f="desc" placeholder="Add a description" aria-label="Description">${attr(e.desc)}</textarea></div>
+    <div class="frow"><span>Calendar</span><select class="fi" id="f-acct" data-f="a" aria-label="Calendar">${ACCOUNTS.slice(1).map(([k, v]) => option(k, v, k === e.a)).join("")}</select></div>
+    <div class="frow"><span>Alert</span><select class="fi" id="f-remind" data-f="remind" aria-label="Alert">${Object.entries(REMINDERS).map(([k, v]) => option(k, v, k === String(e.remind))).join("")}</select></div>
+    <div class="frow"><span>Show as</span><select class="fi" id="f-busy" data-f="busy" aria-label="Show as">${option("busy", "Busy", e.busy === "busy")}${option("free", "Free", e.busy === "free")}</select></div>
+    <div class="efoot">${e.isNew ? "" : `<button class="act" data-delev>Delete</button>`}<button class="act" data-cancel>Cancel</button><button class="join" data-save>${fresh ? "Save and send invites" : "Save"}</button></div>
+  </aside>`;
+}
+function calHTML() {
+  return `<div class="calwrap"><section class="calview" id="calview">
+    <div class="chead"><h1>${weekTitle()}</h1><div class="cnav"><button class="act" data-week="-1" aria-label="Previous week">‹</button><button class="act" data-today>Today</button><span class="calzoom"><button class="act" data-calzoom="-1" aria-label="Fold time (⌘−)" title="Fold time (⌘−)">−</button><button class="act" data-calzoom="1" aria-label="Stretch time (⌘+)" title="Stretch time (⌘+)">+</button></span><button class="act" data-week="1" aria-label="Next week">›</button></div><button class="join new" data-new>New event</button></div>
+    <div class="dgrid" id="week">${weekHTML()}</div>
+  </section>${editorHTML()}</div>`;
+}
+function paintWeek() { if ($("week")) $("week").innerHTML = weekHTML(); }
+/* Zoom the week like Photos: pinch out and the hours stretch, pinch in and the day folds up, and the time under your
+   fingers stays put. clientY is where to hold steady (the middle of the view when null). */
+function calZoomTo(next, clientY, animate) {
+  const view = $("calview"), grid = $("week");
+  if (!view || !grid) return;
+  next = Math.min(HOUR_MAX, Math.max(calFloor(), next));
+  if (Math.abs(next - HOUR) < .01) return;
+  const vr = view.getBoundingClientRect(), col = grid.querySelector(".dcol");
+  const at = clientY ?? vr.top + vr.height / 2;
+  const top = col ? col.getBoundingClientRect().top : vr.top;
+  const minute = (at - top) / HOUR * 60; // the time under the pointer
+  HOUR = next;
+  paintWeek();
+  const newTop = (col ? grid.querySelector(".dcol").getBoundingClientRect().top : vr.top);
+  view.scrollTop += newTop + minute / 60 * HOUR - at;
+  try { localStorage.setItem("inbox-cal-hour", String(Math.round(HOUR * 10) / 10)); } catch {}
+}
+// Folded all the way, the whole day fits the screen exactly.
+function calFloor() {
+  const view = $("calview"), head = view?.querySelector(".chead"), days = $("week")?.querySelector(".dh");
+  if (!view) return HOUR_MIN;
+  const room = view.clientHeight - (head?.offsetHeight || 0) - (days?.offsetHeight || 0) - 24;
+  return Math.max(HOUR_MIN, room / 24);
+}
+function fitCalHeader() {
+  const view = $("calview"), head = view?.querySelector(".chead");
+  if (head) view.style.setProperty("--chead-h", head.offsetHeight + "px");
+  if (view && HOUR < calFloor()) { HOUR = calFloor(); paintWeek(); }
+}
+let calAnim = null;
+function calZoomBy(factor, clientY, animate) {
+  if (!animate) return calZoomTo(HOUR * factor, clientY);
+  cancelAnimationFrame(calAnim);
+  const from = HOUR, to = Math.min(HOUR_MAX, Math.max(calFloor(), HOUR * factor)), t0 = performance.now();
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const tick = now => {
+    const t = reduce ? 1 : Math.min(1, (now - t0) / 260), e = 1 - Math.pow(1 - t, 3);
+    calZoomTo(from * Math.pow(to / from, e), clientY);
+    if (t < 1) calAnim = requestAnimationFrame(tick);
+  };
+  calAnim = requestAnimationFrame(tick);
+}
+// Trackpad pinch: Chrome sends ctrl+wheel; Safari and the Mac app send gesture events.
+document.addEventListener("wheel", e => {
+  if (!e.ctrlKey || view !== "calendar" || !e.target.closest?.("#calview")) return;
+  e.preventDefault();
+  calZoomBy(Math.exp(-e.deltaY * 0.012), e.clientY);
+}, {passive: false});
+let pinchFrom = null;
+// The Mac app sends its own pinch (window.calPinch) so the two never double up.
+window.calPinch = (factor, clientY) => { if (view === "calendar") calZoomBy(factor, clientY); };
+document.addEventListener("gesturestart", e => { if (!document.documentElement.classList.contains("mac-app") && view === "calendar" && e.target.closest?.("#calview")) { e.preventDefault(); pinchFrom = HOUR; } });
+document.addEventListener("gesturechange", e => { if (pinchFrom != null) { e.preventDefault(); calZoomTo(pinchFrom * e.scale, e.clientY); } });
+document.addEventListener("gestureend", e => { if (pinchFrom != null) { e.preventDefault(); pinchFrom = null; } });
+function newDraft(day, s, m) {
+  draft = ev({id: nextEvent++, isNew: true, day, s, m, a: acct === "all" ? (ACCOUNTS[1]?.[0] ?? "work") : acct, n: draft?.isNew ? draft.n : ""});
+}
+function openDraftEditor() { render(); $("f-title")?.focus(); }
+function addGuest() {
+  const input = $("f-guest"), name = input?.value.trim().replace(/,$/, "");
+  if (!name || draft.guests.some(g => g.n === name)) return;
+  draft.guests.push({n: name, st: "Invite to send"});
+  render(); $("f-guest").focus();
+}
+function saveDraft() {
+  addGuest();
+  const {isNew, ...saved} = draft;
+  const sending = saved.guests.filter(g => g.st === "Invite to send").length;
+  saved.guests = saved.guests.map(g => g.st === "Invite to send" ? {...g, st: "Awaiting reply"} : g);
+  if (!saved.n.trim()) saved.n = "Untitled";
+  const before = events.map(e => e);
+  events = isNew ? [...events, saved] : events.map(e => e.id === saved.id ? saved : e);
+  draft = null; render();
+  toast(sending ? `Saved. Sample only, so no invites went to ${sending} ${sending === 1 ? "guest" : "guests"}.` : "Saved", () => { events = before; });
+}
+function deleteDraft() {
+  const before = events.map(e => e);
+  events = events.filter(e => e.id !== draft.id); draft = null; render();
+  toast("Event deleted", () => { events = before; });
+}
+
+function toggleView() { view = view === "calendar" ? "mail" : "calendar"; draft = null; picks.clear(); render(); }
+
+/* How emails look in the reading pane: Dark, Dim or Light. Remembered on this Mac. */
+const LOOKS = {dark: ["Dark", "Light emails are turned dark. Photos keep their colors."], dim: ["Dim", "A softer dark with less contrast, for late at night."], light: ["Light", "Emails exactly as the sender designed them, on white."]};
+let emailLook = "dark";
+try { emailLook = LOOKS[localStorage.getItem("inbox-email-look")] ? localStorage.getItem("inbox-email-look") : "dark"; } catch {}
+function setEmailLook(look) {
+  emailLook = LOOKS[look] ? look : "dark";
+  try { localStorage.setItem("inbox-email-look", emailLook); } catch {}
+  document.documentElement.dataset.look = emailLook;
+  window.dispatchEvent(new Event("emaillook"));
+  render();
+}
+document.documentElement.dataset.look = emailLook;
+/* The background: the sky through the day, or the original blue. Remembered on this Mac. */
+const BACKGROUNDS = {sky: ["Sky", `Follows the real sky over ${window.REAL_DATA?.city?.name || "London"}: dawn, daylight, golden hour, dusk and night.`], classic: ["Blue glass", "The original blue, the same all day."]};
+let bgLook = "sky";
+try { bgLook = BACKGROUNDS[localStorage.getItem("inbox-background")] ? localStorage.getItem("inbox-background") : "sky"; } catch {}
+document.documentElement.dataset.bg = bgLook;
+function setBackground(look) {
+  bgLook = BACKGROUNDS[look] ? look : "sky";
+  try { localStorage.setItem("inbox-background", bgLook); } catch {}
+  document.documentElement.dataset.bg = bgLook;
+  window.skyRestart?.();
+  render();
+}
+/* Style: Inbox's own look, or Herdr's (a test). Remembered on this Mac. */
+const STYLES = {inbox: ["Inbox", "Blue glass and Circular, the way it's always looked."], herdr: ["Herdr", "Herdr's colors: its aurora, slowly changing hue, behind dark glass cards."]};
+let styleLook = "inbox";
+try { styleLook = STYLES[localStorage.getItem("inbox-style")] ? localStorage.getItem("inbox-style") : "inbox"; } catch {}
+document.documentElement.classList.toggle("style-herdr", styleLook === "herdr");
+function setStyle(look) {
+  styleLook = STYLES[look] ? look : "inbox";
+  try { localStorage.setItem("inbox-style", styleLook); } catch {}
+  document.documentElement.classList.toggle("style-herdr", styleLook === "herdr");
+  render();
+}
+/* The Herdr style's sky: the hue turns a full circle every HERDR_LAP ms, from the clock, so it carries on where it was
+   after a reload. Every few seconds it sets the next hue and CSS glides there (the sky's filter, the accents' colors),
+   so the browser only restyles once per step. The angle is never wrapped to 0–360, so a glide never spins backwards. */
+const HERDR_LAP = 6 * 60 * 1000, HERDR_STEP = 4000;
+function herdrSky() {
+  let sky = document.getElementById("herdrsky");
+  if (!sky) { sky = document.createElement("div"); sky.id = "herdrsky"; document.body.prepend(sky); }
+  let last = 0;
+  const turn = (t, glide) => {
+    glide = glide && Date.now() - last < 2 * HERDR_STEP; // after a pause (hidden, other style), jump instead of spinning to catch up
+    last = Date.now();
+    const deg = ((t % (HERDR_LAP * 1000)) / HERDR_LAP * 360).toFixed(2) + "deg";
+    sky.style.transition = glide ? `filter ${HERDR_STEP}ms linear` : "none";
+    sky.style.setProperty("--hrot", deg);
+    document.documentElement.style.setProperty("--hshift", deg);
+  };
+  turn(Date.now(), false);
+  setInterval(() => { if (styleLook === "herdr" && !document.hidden) turn(Date.now() + HERDR_STEP, true); }, HERDR_STEP);
+}
+if (document.body) herdrSky(); else addEventListener("DOMContentLoaded", herdrSky);
+const hourLabel = h => { const hh = Math.floor(h) % 24, mm = Math.round((h % 1) * 60); return `${hh % 12 || 12}:${String(mm).padStart(2, "0")} ${hh < 12 ? "AM" : "PM"}`; };
+function settingsHTML() {
+  return `<section class="settings"><div class="setin"><h1>Workspace settings</h1>
+    <article class="ws looks"><div class="wsbody"><b class="lookh">Style</b><small>The look of the whole app.</small>
+      <div class="lookpick" role="radiogroup" aria-label="Style">${Object.entries(STYLES).map(([k, [label, note]]) => `<button role="radio" aria-checked="${k === styleLook}" class="lookopt ${k === styleLook ? "on" : ""}" data-style="${k}">
+        <span class="stswatch st-${k}" aria-hidden="true"></span><b>${label}</b><small>${note}</small></button>`).join("")}</div>
+    </div></article>
+    <article class="ws looks"><div class="wsbody"><b class="lookh">Email appearance</b><small>How emails look in the reading pane.</small>
+      <div class="lookpick" role="radiogroup" aria-label="Email appearance">${Object.entries(LOOKS).map(([k, [label, note]]) => `<button role="radio" aria-checked="${k === emailLook}" class="lookopt ${k === emailLook ? "on" : ""}" data-look="${k}">
+        <span class="lookswatch look-${k}" aria-hidden="true"><i></i><i></i><i></i></span><b>${label}</b><small>${note}</small></button>`).join("")}</div>
+    </div></article>
+    <article class="ws looks"><div class="wsbody"><b class="lookh">Background</b><small>What's behind the glass.</small>
+      <div class="lookpick bgpick" role="radiogroup" aria-label="Background">${Object.entries(BACKGROUNDS).map(([k, [label, note]]) => `<button role="radio" aria-checked="${k === bgLook}" class="lookopt ${k === bgLook ? "on" : ""}" data-bg="${k}">
+        <span class="bgswatch bg-${k}" aria-hidden="true"></span><b>${label}</b><small>${note}</small></button>`).join("")}</div>
+      ${bgLook === "sky" ? `<label class="skytry"><span>Preview a time</span><input type="range" id="skytime" min="0" max="23.75" step="0.25" value="${(() => { const d = new Date(); return d.getHours() + Math.floor(d.getMinutes() / 15) / 4; })()}"><output id="skytimeout">Now</output></label>` : ""}
+    </div></article>
+    <p>Name each inbox and pick the icon you want in the top bar.</p>
+    ${ACCOUNTS.map(([k, name]) => `<article class="ws"><span class="wsicon">${svg(GLYPHS[accountIcons[k] || "inbox"])}</span><div class="wsbody">
+      <input class="fi" id="ws-${k}" data-ws="${k}" aria-label="Name for ${attr(name)}" value="${attr(name)}"><small>${ADDRESS[k]}</small>
+      <div class="pick-icons" role="group" aria-label="Icon for ${attr(name)}">${Object.keys(GLYPHS).map(g => `<button class="${g === accountIcons[k] ? "on" : ""}" data-icon="${g}" data-for="${k}" aria-pressed="${g === accountIcons[k]}" aria-label="${g}" title="${g}">${svg(GLYPHS[g])}</button>`).join("")}</div>
+    </div></article>`).join("")}
+  </div></section>`;
+}
+
+function openComposer() {
+  composing = composing || {from: acct === "all" ? (ACCOUNTS[1]?.[0] ?? "work") : acct, to: "", cc: "", subj: "", body: "", showCc: false};
+  paintComposer(); $(composing.to ? "c-body" : "c-to").focus();
+}
+function closeComposer() { composing = null; $("composer").hidden = true; $("composer").innerHTML = ""; }
+function searchHTML() {
+  const note = searching && searching === search.trim() ? `<span class="snote">Searching all mail…</span>`
+    : searchHits ? `<span class="snote">${shown().length} found · <button data-sclear>Clear</button></span>` : "";
+  return `<div class="searchbar"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3.5 3.5"/></svg>
+    <input id="search" type="search" placeholder="Search mail" aria-label="Search mail" value="${attr(search)}" autocomplete="off">${note}</div>`;
+}
+async function searchAll(q) { /* the live app searches Gmail; here, the loaded sample mail */ }
+function paintComposer() {
+  const c = composing;
+  $("composer").innerHTML = `<div class="chd"><h1>${c.forward ? "Forward" : "New email"}</h1><button data-cclose aria-label="Close">✕</button></div>
+    <select class="fi" id="c-from" data-c="from" aria-label="From">${ACCOUNTS.slice(1).map(([k, v]) => option(k, `From ${attr(v)} · ${ADDRESS[k]}`, k === c.from)).join("")}</select>
+    <input class="fi" id="c-to" data-c="to" list="people-mail" placeholder="To" aria-label="To" value="${attr(c.to)}"><datalist id="people-mail">${PEOPLE.map(p => `<option value="${p}">`).join("")}</datalist>
+    ${c.showCc ? `<input class="fi" id="c-cc" data-c="cc" list="people-mail" placeholder="Cc" aria-label="Cc" value="${attr(c.cc)}"><input class="fi" id="c-bcc" data-c="bcc" list="people-mail" placeholder="Bcc" aria-label="Bcc" value="${attr(c.bcc || "")}">` : `<button class="cclink" data-ccshow>Add Cc or Bcc</button>`}
+    <input class="fi" id="c-subj" data-c="subj" placeholder="Subject" aria-label="Subject" value="${attr(c.subj)}">
+    <textarea class="fi" id="c-body" data-c="body" placeholder="Write your email" aria-label="Message">${attr(c.body)}</textarea>
+    <div class="cfoot"><button class="act" data-cclose>Discard</button><button class="send" data-csend aria-label="Send" title="Send"></button></div>`;
+  $("composer").hidden = false;
+}
+function forwardEmail(m) {
+  const subj = plainText(m.subj);
+  composing = {from: m.a, to: "", cc: "", bcc: "", showCc: false, subj: /^fwd?:/i.test(subj) ? subj : "Fwd: " + subj,
+    body: `\n\n---------- Forwarded message ---------\nFrom: ${plainText(m.from)}\nSubject: ${subj}\n\n${plainText(m.body)}`, forward: [m.gmailId].filter(Boolean)};
+  paintComposer(); $("c-to").focus();
+}
+function sendComposer() {
+  const c = composing;
+  if (!c.to.trim()) { toast("Add someone to send this to"); return $("c-to").focus(); }
+  const sent = {id: nextMail++, a: c.from, cat: "Sent", score: 0, from: c.to.trim(), time: "Now", subj: c.subj.trim() || "(no subject)", why: "You sent this.", body: c.body || " ", unread: false, star: false, deleted: false};
+  mail.push(sent); closeComposer(); render();
+  toast("Saved to Sent. Sample only, so nothing was emailed.", () => { mail = mail.filter(m => m !== sent); });
+}
+
+/* Press and drag in a day column to block out a new event; a plain click makes a one-hour event. */
+const snapAt = (col, clientY) => {
+  const min = GRID_START + (clientY - col.getBoundingClientRect().top) / HOUR * 60;
+  return Math.min(GRID_END - 15, Math.max(GRID_START, Math.round(min / 15) * 15));
+};
+document.addEventListener("pointerdown", e => {
+  const col = e.target.closest?.(".dcol");
+  if (!col || e.button || e.target.closest(".cev")) return;
+  drag = {col: +col.dataset.day, from: snapAt(col, e.clientY), moved: false};
+});
+document.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const col = document.querySelector(`.dcol[data-day="${drag.col}"]`), at = snapAt(col, e.clientY);
+  if (at === drag.from) return;
+  drag.moved = true;
+  const s = Math.min(at, drag.from), m = Math.max(15, Math.abs(at - drag.from));
+  if (!draft?.isNew) { newDraft(drag.col, s, m); render(); } else { draft.day = drag.col; draft.s = s; draft.m = m; paintWeek(); }
+});
+document.addEventListener("pointerup", () => {
+  if (!drag) return;
+  if (!drag.moved) newDraft(drag.col, drag.from, 60);
+  drag = null; openDraftEditor();
+});
+document.addEventListener("pointercancel", () => { drag = null; });
+document.addEventListener("input", e => {
+  const f = e.target.dataset?.f;
+  if (!f || !draft) return;
+  const value = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+  if (f === "date") { if (value) draft.day = dayOf(value); }
+  else if (f === "start") { if (value) draft.s = fromHHMM(value); }
+  else if (f === "end") { if (value) draft.m = Math.max(15, fromHHMM(value) - draft.s); }
+  else draft[f] = value;
+  if (f === "allDay") render(); else paintWeek();
+  if (f === "date" && !occursInWeek(draft.day)) { week = Math.floor(draft.day / 7); render(); }
+});
+const occursInWeek = day => day >= week * 7 && day < (week + 1) * 7;
+
+/* Collapsed sidebar: rest the pointer on it to open it over the page. */
+let sidePeekTimer = null, peekArmed = true;
+document.addEventListener("mouseover", e => {
+  if (!peekArmed || !$("glass").classList.contains("collapsed") || !e.target.closest?.(".sidebar") || !matchMedia("(hover: hover) and (min-width: 721px)").matches) return;
+  clearTimeout(sidePeekTimer);
+  sidePeekTimer = setTimeout(() => $("glass").classList.add("sidepeek"), 140);
+});
+document.addEventListener("mouseout", e => {
+  if (!e.target.closest?.(".sidebar") || e.relatedTarget?.closest?.(".sidebar")) return;
+  clearTimeout(sidePeekTimer);
+  peekArmed = true;
+  $("glass").classList.remove("sidepeek");
+});
+/* A plain mouse wheel scrolls the meeting cards sideways when they overflow. */
+document.addEventListener("wheel", e => {
+  const row = e.target.closest?.(".meets");
+  if (!row || row.scrollWidth <= row.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+  const atEnd = e.deltaY > 0 ? row.scrollLeft + row.clientWidth >= row.scrollWidth - 1 : row.scrollLeft <= 0;
+  if (atEnd) return;
+  e.preventDefault(); row.scrollLeft += e.deltaY;
+}, {passive: false});
+
+/* Hover preview: only while the reading pane is on screen. Nothing is marked read and the streak is untouched. */
+let previewId = null, previewTimer = null;
+/* The preview lies over the open email, which stays where it is (scroll, thread and reply) underneath. */
+function showInReader(id) {
+  const pane = document.querySelector(".reader"), m = mail.find(x => x.id === id);
+  if (!pane || !m || getComputedStyle(pane).display === "none") return;
+  pane.querySelector(":scope > .rpreview")?.remove();
+  pane.classList.toggle("previewing", id !== sel);
+  if (id === sel) return;
+  const layer = document.createElement("div");
+  layer.className = "rpreview";
+  layer.innerHTML = readerHTML(m);
+  pane.appendChild(layer);
+}
+function measureActs(row) {
+  const acts = row?.querySelector(".hoveracts");
+  if (acts) row.style.setProperty("--acts", acts.offsetWidth + "px");
+}
+document.addEventListener("mouseover", e => {
+  const row = e.target.closest?.(".list .row");
+  if (row && !row.style.getPropertyValue("--acts")) measureActs(row);
+  const id = row ? +row.querySelector("[data-sel]")?.dataset.sel : null;
+  if (!id || id === previewId) return;
+  previewId = id;
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => showInReader(id), 110);
+});
+document.addEventListener("mouseout", e => {
+  if (!e.target.closest?.(".list") || e.relatedTarget?.closest?.(".list")) return;
+  clearTimeout(previewTimer);
+  if (previewId !== null) { previewId = null; showInReader(sel); }
+});
+document.addEventListener("input", e => {
+  if (e.target.id === "search") {
+    search = e.target.value; searchHits = null;
+    const at = e.target.selectionStart; render();
+    const box = $("search"); box?.focus(); box?.setSelectionRange(at, at);
+    // A beat after you stop typing, look through all of Gmail too, not just the mail that's loaded.
+    clearTimeout(searchTimer);
+    const q = search.trim();
+    searchLimit = 60; searchMore = false;
+    if (q.length >= 2) searchTimer = setTimeout(() => searchAll(q, true), 300);
+    return;
+  }
+  const {c, ws} = e.target.dataset || {};
+  if (c && composing) composing[c] = e.target.value;
+  if (ws) { ACCOUNTS.find(a => a[0] === ws)[1] = e.target.value || ws; saveWorkspaces(); paintTabs(); }
+});
+
+function listHTML(list) {
+  const later = list.filter(m => m.unread && m.score < WAIT_BELOW);
+  let html = "", marked = false;
+  list.forEach(m => {
+    if (!marked && !search && !searchHits && m.score < WAIT_BELOW && !keptStar(m) && later.length) {
+      html += `<div class="wait"><span>The rest can likely wait</span><button data-readlater>Mark ${later.length} read</button></div>`;
+      marked = true;
+    }
+    html += rowHTML(m);
+  });
+  return html;
+}
+
+function readerHTML(m) {
+  if (!m) return "";
+  return `<button class="back" data-close>← Back</button>
+    <div class="rscroll">
+      <div class="rhead"><span class="av" aria-hidden="true" style="${hue(m)}">${initials(m.from)}</span><div><h1>${m.subj}</h1><small>${m.from} to ${acctName(m.a)} · ${m.time} · ${m.cat}</small></div></div>
+      <p class="why">${m.why}</p>
+      <p class="body">${inline(m.body)}</p>
+      <div class="acts">
+        ${m.unread ? `<button class="act" data-read="${m.id}">Mark read</button>` : `<button class="act" data-unread="${m.id}">Mark unread</button>`}
+        <button class="act" data-star="${m.id}"><span class="bigstar">${m.star ? "★" : "☆"}</span> ${m.star ? "Starred" : "Star"}</button>
+        <button class="act" data-fwd="${m.id}">Forward</button>
+        <button class="act" data-arch="${m.id}">Archive</button>
+        <button class="act" data-del="${m.id}">Delete</button>
+        ${canUnsub(m) ? `<button class="act" data-unsub="${m.id}" ${unsubBusy.has(senderKey(m)) || unsubbed.has(senderKey(m)) ? "disabled" : ""}>${unsubBusy.has(senderKey(m)) ? "Unsubscribing…" : unsubbed.has(senderKey(m)) ? "Unsubscribed" : "Unsubscribe"}</button>` : ""}
+        <button class="act" data-spam="${m.id}">Report spam</button>
+        <button class="act" data-orig="${m.id}">View original</button>
+        ${m.score >= WAIT_BELOW ? `<button class="act" data-rank="${m.id}" data-score="30">Not important</button>` : `<button class="act" data-rank="${m.id}" data-score="80">Important</button>`}
+      </div>
+    </div>
+    <form class="compose" id="compose">
+      <textarea id="reply-box" aria-label="Reply" placeholder="Reply…">${m.draft || ""}</textarea>
+      <button class="send" aria-label="Send reply and mark read" title="Send"></button>
+    </form>`;
+}
+
+function paintTabs() {
+  $("tabs").innerHTML = ACCOUNTS.map(([k, name]) => {
+    const n = mail.filter(m => (m.unread || m.star) && !m.deleted && m.cat !== "News" && (k === "all" || m.a === k)).length;
+    return `<button class="tab ${k === acct ? "on" : ""}" data-acct="${k}" aria-pressed="${k === acct}" aria-label="${attr(name)}, ${n} unread" title="${attr(name)}">${svg(GLYPHS[accountIcons[k] || "inbox"])}<span class="nm">${attr(name)}</span><i>${n}</i></button>`;
+  }).join("");
+}
+
+let lastView = null;
+function render() {
+  paintTabs();
+  const list = shown();
+  if (!list.some(m => m.id === sel)) sel = list[0]?.id ?? null;
+  const cur = mail.find(m => m.id === sel);
+  const count = c => mail.filter(m => inAcct(m) && m.unread && m.cat === c).length;
+  const total = mail.filter(m => inAcct(m) && (m.unread || m.star) && m.cat !== "News").length;
+  const cats = `<button class="cat unreadcat ${cat === "Unread" ? "on" : ""}" data-cat="Unread" title="Unread"><u></u><span>Unread</span><i>${total || ""}</i></button>` +
+    `<button class="cat none ${!cat ? "on" : ""}" data-cat="" title="All mail"><u></u><span>All mail</span><i></i></button>` +
+    `<button class="cat star ${cat === "Starred" ? "on" : ""}" data-cat="Starred"><u>★</u><span>Starred</span><i>${mail.filter(m => inAcct(m) && m.star).length || ""}</i></button>` +
+    Object.keys(CATS).filter(c => c !== "News" && mail.some(m => inAcct(m) && m.cat === c)).map(c => `<button class="cat ${c === cat ? "on" : ""}" data-cat="${c}" title="${c}" style="--h:${CATS[c].h}"><u></u><span>${c}</span><i>${count(c) || ""}</i></button>`).join("");
+  $("catbar").innerHTML = cats;
+  const body = list.length
+    ? `<div class="listcol">${searchHTML()}<div class="list ${picks.size ? "selecting" : ""}" id="list">${search ? "" : todayHTML() + meetHTML()}${listHTML(list)}${search && searchMore && searchHits ? `<button class="act moremail" data-smore>Show older matches</button>` : ""}</div></div>${DIVIDER}<section class="reader ${peek ? "peek" : ""}" data-key="${cur ? cur.id : ""}" style="${cur ? (cur.unread ? hue(cur) : "--c:0") : ""}">${readerHTML(cur)}</section>`
+    : `<div class="listcol">${searchHTML()}<div class="list" id="list"><div class="zero inlist"><h1>${search ? "No loaded mail matches" : cat === "Starred" ? "Nothing starred" : cat === "Unread" ? "All caught up" : "Nothing here"}</h1><span>${cat === "Starred" ? "Star an email to come back to it later." : cat === "Unread" ? "Every email has been dealt with." : "This view is empty."}</span></div></div></div>`;
+  const keep = $("list")?.scrollTop ?? 0, keepCal = $("calview")?.scrollTop ?? 0;
+  // Same email still open: refresh the list and the reader's header and buttons, but leave the email itself alone,
+  // so a background refresh never jumps you back to the top of a thread you're reading.
+  const oldReader = document.querySelector(".reader");
+  const keepReader = (view === "mail" || view === "news") && lastView === view && list.length && cur && $("list") && (view === "news" || document.querySelector(".listcol")) && oldReader?.dataset.key === String(cur.id);
+  if (keepReader) {
+    oldReader.querySelector(":scope > .rpreview")?.remove();
+    oldReader.classList.remove("previewing");
+    const fresh = document.createElement("div");
+    fresh.innerHTML = view === "news" ? newsHTML(list) : body;
+    const side = view === "news" ? ".newscol" : ".listcol";
+    document.querySelector(side).replaceWith(fresh.querySelector(side));
+    const next = fresh.querySelector(".reader");
+    oldReader.className = next.className; oldReader.setAttribute("style", next.getAttribute("style") || "");
+    for (const part of [".rhead", ".why", ".acts"]) { const a = oldReader.querySelector(".rscroll > " + part), b = next.querySelector(".rscroll > " + part); if (a && b) a.replaceWith(b); }
+  } else
+  $("panes").innerHTML = view === "calendar" ? calHTML() : view === "settings" ? settingsHTML() : view === "news" ? newsHTML(list) : body;
+  $("newsbtn").innerHTML = `${ICONS.news}<span class="lbl">News</span><i class="newsi lbl" aria-label="${streak.days} day streak">${ICONS.flame}${streak.days}</i>`;
+  $("newsbtn").classList.toggle("on", view === "news");
+  $("glass").classList.toggle("newsv", view === "news");
+  $("setbtn").innerHTML = `${svg(GEAR)}<span class="lbl">Settings</span>`;
+  $("setbtn").classList.toggle("on", view === "settings");
+  if ($("calview")) {
+    fitCalHeader();
+    // Opening the calendar starts a little before now (or at 7 AM), not at midnight.
+    if (lastView !== "calendar") $("calview").scrollTop = Math.max(0, (Math.min(NOW.min - 90, 7 * 60) - GRID_START) / 60 * HOUR);
+    else $("calview").scrollTop = keepCal;
+  }
+  lastView = view;
+  $("glass").classList.toggle("cal", view !== "mail" && view !== "news");
+  $("calbtn").innerHTML = `${ICONS.calendar}<span class="lbl">Calendar</span>`;
+  $("inboxbtn").innerHTML = `${ICONS.inbox}<span class="lbl">Inbox</span>`;
+  $("calbtn").classList.toggle("on", view === "calendar");
+  $("inboxbtn").classList.toggle("on", view === "mail");
+  if ($("list")) $("list").scrollTop = keep;
+  $("status").innerHTML = `<span>Sample mail · ${total ? total + " unread" : "Zero unread"}</span>` + (total ? "" : `<button data-reset>Reset</button>`);
+  paintUndo();
+  document.querySelectorAll(".list .row.sel").forEach(measureActs);
+  if (view !== "settings") window.skyPreview?.(null);
+  if (view === "mail" || view === "news") noteHistory(cur);
+  paintHistory();
+  const picked = mail.filter(m => picks.has(m.id));
+  $("glass").classList.toggle("has-bulk", picks.size > 0);
+  $("bulk").innerHTML = picks.size ? `<div class="bar" role="toolbar" aria-label="Selected emails"><span>${picks.size} selected</span>
+    ${picked.some(m => m.unread) ? `<button data-bulkread>Mark as read</button>` : `<button data-bulkunread>Mark as unread</button>`}
+    <button class="del" data-bulkdel>Delete</button><button data-clear aria-label="Clear selection">✕</button></div>` : "";
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const d = b.dataset;
+  if ("gomail" in d) { view = "mail"; cat = "Unread"; draft = null; render(); }
+  else if ("gocal" in d) { view = "calendar"; picks.clear(); render(); }
+  else if ("gonews" in d) { view = "news"; cat = null; draft = null; peek = false; picks.clear(); sel = shown()[0]?.id ?? null; render(); }
+  else if ("hist" in d) goHistory(+d.hist);
+  else if ("collapse" in d) {
+    // The pointer is still on the sidebar after this click, so hover-open waits until it leaves once.
+    $("glass").classList.toggle("collapsed");
+    $("glass").classList.remove("sidepeek");
+    clearTimeout(sidePeekTimer); peekArmed = false;
+  }
+  else if ("compose" in d) openComposer();
+  else if ("csend" in d) sendComposer();
+  else if ("cclose" in d) closeComposer();
+  else if ("ccshow" in d) { composing.showCc = true; paintComposer(); $("c-cc").focus(); }
+  else if ("settings" in d) { view = "settings"; draft = null; picks.clear(); render(); }
+  else if (d.icon) { accountIcons[d.for] = d.icon; saveWorkspaces(); render(); }
+  else if (d.style && b.classList.contains("lookopt")) setStyle(d.style);
+  else if (d.look) setEmailLook(d.look);
+  else if (d.bg && b.classList.contains("lookopt")) setBackground(d.bg);
+  else if ("view" in d) toggleView();
+  else if (d.week) { week += +d.week; draft = null; render(); }
+  else if ("today" in d) { week = 0; draft = null; render(); }
+  else if (d.calzoom) calZoomBy(+d.calzoom > 0 ? 1.5 : 1 / 1.5, null, true);
+  else if ("new" in d) { newDraft(week === 0 ? NOW.day : week * 7, week === 0 ? 15 * 60 : 10 * 60, 60); openDraftEditor(); }
+  else if (d.ev) { const found = events.find(x => x.id === +d.ev); draft = {...found, guests: found.guests.map(g => ({...g}))}; render(); }
+  else if ("addmeet" in d) { const code = n => Array.from({length: n}, () => "abcdefghijkmnopqrstuvwxyz"[Math.floor(Math.random() * 25)]).join(""); draft.via = "Google Meet"; draft.code = `${code(3)}-${code(4)}-${code(3)}`; render(); }
+  else if ("rmmeet" in d) { draft.via = null; draft.code = null; render(); }
+  else if ("copy" in d) { navigator.clipboard?.writeText("https://" + linkText(draft)).then(() => toast("Link copied"), () => toast("Could not copy. Select the link instead.")); }
+  else if (d.rmguest) { draft.guests.splice(+d.rmguest, 1); render(); }
+  else if (d.rsvp) { draft.rsvp = d.rsvp; render(); }
+  else if ("save" in d) saveDraft();
+  else if ("cancel" in d) { draft = null; render(); }
+  else if ("delev" in d) deleteDraft();
+  else if ("evundo" in d) { evUndo?.(); evUndo = null; $("toast").hidden = true; render(); }
+  else if (d.acct) { acct = d.acct; picks.clear(); if (view === "settings") view = "mail"; render(); }
+  else if (d.orig) showOriginal(+d.orig);
+  else if ("closeorig" in d) closeOriginal();
+  else if (d.pick) togglePick(+d.pick, e.shiftKey);
+  else if (d.star) toggleStar(+d.star);
+  else if (d.del) remove([+d.del]);
+  else if (d.arch) { const ids = [+d.arch]; advance(ids, () => true); apply(mail.filter(m => ids.includes(m.id)), "archived", true); }
+  else if (d.unsub) { const m = mail.find(x => x.id === +d.unsub); if (m && !unsubBusy.has(senderKey(m))) { unsubscribe(m); if (m.unread) markRead([m.id]); } }
+  else if (d.spam) { const sm = mail.find(x => x.id === +d.spam); if (sm && canUnsub(sm) && !unsubbed.has(senderKey(sm)) && !unsubBusy.has(senderKey(sm))) unsubscribe(sm); const ids = [+d.spam]; advance(ids, () => true); apply(mail.filter(m => ids.includes(m.id)), "spam", true); }
+  else if (d.fwd) forwardEmail(mail.find(m => m.id === +d.fwd));
+  else if ("smore" in d) { searchLimit += 100; searchAll(search.trim(), true, searchLimit); }
+  else if ("sclear" in d) { search = ""; searchHits = null; searching = ""; clearTimeout(searchTimer); render(); }
+  else if ("bulkread" in d) markRead([...picks]);
+  else if ("bulkunread" in d) markUnread([...picks]);
+  else if ("bulkdel" in d) remove([...picks]);
+  else if ("clear" in d) { picks.clear(); render(); }
+  else if (d.sel) {
+    sel = +d.sel; peek = true;
+    // Opening an email marks it read.
+    const opened = mail.find(m => m.id === sel);
+    if (opened.unread) {
+      opened.unread = false; window.syncFlags?.([opened], "unread", false);
+      undoFn = () => { opened.unread = true; window.syncFlags?.([opened], "unread", true); };
+      undoLabel = "Marked read"; undoAt = Date.now();
+    }
+    if (view === "news") countNewsToday();
+    render();
+  }
+  else if (d.read) markRead([+d.read]);
+  else if (d.todaydone) toggleTodayTask(d.todaydone);
+  else if ("todayfold" in d) { todayFolded = !todayFolded; try { localStorage.setItem("inbox-today-fold", todayFolded ? "1" : "0"); } catch {} render(); }
+  else if (d.todaynews) {
+    view = "news"; cat = null; draft = null; picks.clear(); sel = +d.todaynews; peek = true;
+    const opened = mail.find(m => m.id === sel);
+    if (opened?.unread) { opened.unread = false; window.syncFlags?.([opened], "unread", false); }
+    countNewsToday(); render();
+  }
+  else if (d.unread) markUnread([+d.unread]);
+  else if (d.rank) rerank(+d.rank, +d.score);
+  else if ("cat" in d) { cat = d.cat || null; view = "mail"; draft = null; picks.clear(); render(); }
+  else if ("readlater" in d) markRead(shown().filter(m => m.unread && m.score < WAIT_BELOW).map(m => m.id));
+  else if ("close" in d) { peek = false; render(); }
+  else if ("undo" in d) { undoFn?.(); undoFn = null; render(); }
+  else if ("reset" in d) { mail = fresh(); undoFn = null; cat = "Unread"; picks.clear(); render(); }
+});
+// Sending a reply marks the email read but keeps you on it; it leaves Unread once you click away.
+document.addEventListener("submit", e => {
+  e.preventDefault();
+  const m = mail.find(x => x.id === sel);
+  if (!m) return;
+  m.draft = "";
+  if (m.unread) { m.unread = false; window.syncFlags?.([m], "unread", false); }
+  render();
+});
+document.addEventListener("input", e => {
+  if (e.target.id !== "skytime") return;
+  const h = +e.target.value; window.skyPreview?.(h); $("skytimeout").textContent = hourLabel(h);
+});
+// A mouse's side buttons go back and forward too.
+document.addEventListener("mouseup", e => { if (e.button === 3 || e.button === 4) { e.preventDefault(); goHistory(e.button === 3 ? -1 : 1); } });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("orig").hidden) return closeOriginal();
+  if (e.target.id === "search" && e.key === "Enter") { e.preventDefault(); clearTimeout(searchTimer); searchAll(search.trim()); return; }
+  if (e.target.id === "search" && e.key === "Escape") { search = ""; searchHits = null; searching = ""; clearTimeout(searchTimer); render(); return; }
+  if (e.key === "/" && !e.target.matches("textarea, input, select")) { e.preventDefault(); $("search")?.focus(); return; }
+  if (view === "calendar" && (e.metaKey || e.ctrlKey) && ["=", "+", "-", "0"].includes(e.key)) {
+    e.preventDefault();
+    return e.key === "0" ? calZoomBy(HOUR_DEFAULT / HOUR, null, true) : calZoomBy(e.key === "-" ? 1 / 1.5 : 1.5, null, true);
+  }
+  if ((e.metaKey || e.ctrlKey) && (e.key === "[" || e.key === "]") && !e.target.matches?.("textarea, input, select")) {
+    e.preventDefault(); return goHistory(e.key === "[" ? -1 : 1);
+  }
+  if (e.key === "Escape" && composing) return closeComposer();
+  if (e.key === "Escape" && draft) { draft = null; return render(); }
+  if (e.target.id === "f-guest" && (e.key === "Enter" || e.key === ",")) { e.preventDefault(); return addGuest(); }
+  if (e.target.matches("textarea, input, select") || !$("orig").hidden) return;
+  if (e.key === "c") return toggleView();
+  if (e.key === "n") { e.preventDefault(); return openComposer(); }
+  if (view !== "mail" && view !== "news" && !"1234".includes(e.key)) return;
+  const list = shown(), at = list.findIndex(m => m.id === sel);
+  if (e.key === "j" && at < list.length - 1) { sel = list[at + 1].id; render(); }
+  else if (e.key === "k" && at > 0) { sel = list[at - 1].id; render(); }
+  else if (e.key === "e" && sel) mail.find(m => m.id === sel).unread ? markRead([sel]) : markUnread([sel]);
+  else if (e.key === "s" && sel) toggleStar(sel);
+  else if (e.key === "x" && sel) togglePick(sel, e.shiftKey);
+  else if ("1234".includes(e.key)) { acct = ACCOUNTS[+e.key - 1][0]; picks.clear(); render(); }
+});
+/* Drag the seam to size the reading pane; double-click it to go back to the default. The width is remembered here. */
+const READER_MIN = 380, LIST_MIN = 340, READER_DEFAULT = 560;
+let readerW = READER_DEFAULT, seamDrag = null;
+try { readerW = +localStorage.getItem("inbox-reader-w") || READER_DEFAULT; } catch {}
+function setReaderW(w, save) {
+  const panes = $("panes");
+  if (!panes) return;
+  const max = Math.max(READER_MIN, panes.clientWidth - LIST_MIN);
+  readerW = Math.round(Math.min(max, Math.max(READER_MIN, w)));
+  $("glass").style.setProperty("--reader-w", readerW + "px");
+  if (save) { try { localStorage.setItem("inbox-reader-w", readerW); } catch {} }
+  window.dispatchEvent(new Event("readerresize"));
+}
+document.addEventListener("pointermove", e => {
+  const seam = seamDrag?.seam || e.target.closest?.(".divider");
+  if (seam) seam.style.setProperty("--handle-y", Math.max(22, Math.min(seam.clientHeight - 22, e.clientY - seam.getBoundingClientRect().top)) + "px");
+  if (seamDrag) setReaderW(seamDrag.right - e.clientX, false);
+});
+document.addEventListener("pointerdown", e => {
+  const seam = e.target.closest?.(".divider");
+  if (!seam || e.button) return;
+  e.preventDefault();
+  seamDrag = {seam, right: $("panes").getBoundingClientRect().right};
+  seam.classList.add("is-dragging");
+  document.body.classList.add("is-column-resizing");
+});
+document.addEventListener("pointerup", () => {
+  if (!seamDrag) return;
+  seamDrag.seam.classList.remove("is-dragging");
+  document.body.classList.remove("is-column-resizing");
+  seamDrag = null;
+  setReaderW(readerW, true);
+});
+document.addEventListener("dblclick", e => { if (e.target.closest?.(".divider")) setReaderW(READER_DEFAULT, true); });
+document.addEventListener("keydown", e => {
+  if (!e.target.closest?.(".divider")) return;
+  if (e.key === "ArrowLeft") setReaderW(readerW + 32, true);
+  if (e.key === "ArrowRight") setReaderW(readerW - 32, true);
+});
+window.addEventListener("resize", () => setReaderW(readerW, false));
+render();
+setReaderW(readerW, false);
+</script>

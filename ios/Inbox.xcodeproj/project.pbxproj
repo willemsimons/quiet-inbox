@@ -1,0 +1,607 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		097D5AD452D0213388E0BA61 /* GoogleSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 984F25AD5697A228835AAE10 /* GoogleSession.swift */; };
+		2196D3AF9075828FB6F25E55 /* HTMLBody.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39A3C0350ADFC60E6FE1066C /* HTMLBody.swift */; };
+		2E83954551E5F7269C8A6778 /* GoogleAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E9BBFC422624EAF47FB0F4 /* GoogleAPI.swift */; };
+		38F13AE8579999BDD6881232 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69F526FB674D4AAE51D71285 /* Assets.xcassets */; };
+		3E5357227A982E45AB92FED3 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB729B1A844CE25803480AA6 /* Models.swift */; };
+		4D5355FFCAF591C6EBCEB525 /* SearchAndContacts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00AD79484D4DDACF77B93E13 /* SearchAndContacts.swift */; };
+		67763E9849A6BA2F52958F26 /* SplitInboxUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EE16F5A0E3E701B7A3EE1A9 /* SplitInboxUITests.swift */; };
+		685865F6162200B036183AC6 /* InboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B884AB897BF32F7FC10DC661 /* InboxTests.swift */; };
+		87AD73398F66CAFCC3F2EE1F /* DetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A475B02262EE9C28574539F0 /* DetailViews.swift */; };
+		9158D3BFFEC9B24ADA931441 /* InboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEEA230509474676EB25A1DA /* InboxStore.swift */; };
+		C044B0A9C937FFD9A1FD9F66 /* AppAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 88EA58B477A0357F706B8BEA /* AppAuth */; };
+		F7489DABC0919467EEAB5469 /* InboxApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83354D6860BC9E1A70BBF151 /* InboxApp.swift */; };
+		F78962DAF1A99DEC0A475A48 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AB3BA51820F45DAE58A1AE33 /* PrivacyInfo.xcprivacy */; };
+		F881ADED6873DAD94EFBA09B /* RowGestureSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F865544AF6D0611069A2899 /* RowGestureSurface.swift */; };
+		FD370F9108B353A5C5EEB199 /* SplitInboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953979A249977BA830E2C350 /* SplitInboxView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0F196986730AAF37C44773A8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FD6775CE7CD5EA945873FE66 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 40AE179E8E5652549BBBCE1D;
+			remoteInfo = Inbox;
+		};
+		F0497D5A5398888A82611E5D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FD6775CE7CD5EA945873FE66 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 40AE179E8E5652549BBBCE1D;
+			remoteInfo = Inbox;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		00AD79484D4DDACF77B93E13 /* SearchAndContacts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchAndContacts.swift; sourceTree = "<group>"; };
+		16E9BBFC422624EAF47FB0F4 /* GoogleAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAPI.swift; sourceTree = "<group>"; };
+		1B4561087522EDEA87D4A330 /* InboxTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = InboxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F865544AF6D0611069A2899 /* RowGestureSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RowGestureSurface.swift; sourceTree = "<group>"; };
+		39A3C0350ADFC60E6FE1066C /* HTMLBody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLBody.swift; sourceTree = "<group>"; };
+		69F526FB674D4AAE51D71285 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		74E5395712125656A9AA4281 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7973723523BC248A64B049CF /* Inbox.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Inbox.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		83354D6860BC9E1A70BBF151 /* InboxApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxApp.swift; sourceTree = "<group>"; };
+		8EE16F5A0E3E701B7A3EE1A9 /* SplitInboxUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitInboxUITests.swift; sourceTree = "<group>"; };
+		953979A249977BA830E2C350 /* SplitInboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitInboxView.swift; sourceTree = "<group>"; };
+		984F25AD5697A228835AAE10 /* GoogleSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleSession.swift; sourceTree = "<group>"; };
+		A475B02262EE9C28574539F0 /* DetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailViews.swift; sourceTree = "<group>"; };
+		AB3BA51820F45DAE58A1AE33 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		AEEA230509474676EB25A1DA /* InboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxStore.swift; sourceTree = "<group>"; };
+		B884AB897BF32F7FC10DC661 /* InboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxTests.swift; sourceTree = "<group>"; };
+		CB729B1A844CE25803480AA6 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		F4659EB4900446D6CDF933D7 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		F488179DC005DD1E7EBC71D4 /* InboxUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = InboxUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AE18D955EB6233C27EF0404A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C044B0A9C937FFD9A1FD9F66 /* AppAuth in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3198D14B4166D4EC1F593F53 /* InboxUITests */ = {
+			isa = PBXGroup;
+			children = (
+				8EE16F5A0E3E701B7A3EE1A9 /* SplitInboxUITests.swift */,
+			);
+			path = InboxUITests;
+			sourceTree = "<group>";
+		};
+		41A18A6D77A8216CA022DCC0 /* ios */ = {
+			isa = PBXGroup;
+			children = (
+				F4659EB4900446D6CDF933D7 /* Config.xcconfig */,
+			);
+			name = ios;
+			path = .;
+			sourceTree = "<group>";
+		};
+		528408FE6E58E9FE5295661F /* Inbox */ = {
+			isa = PBXGroup;
+			children = (
+				69F526FB674D4AAE51D71285 /* Assets.xcassets */,
+				A475B02262EE9C28574539F0 /* DetailViews.swift */,
+				16E9BBFC422624EAF47FB0F4 /* GoogleAPI.swift */,
+				984F25AD5697A228835AAE10 /* GoogleSession.swift */,
+				39A3C0350ADFC60E6FE1066C /* HTMLBody.swift */,
+				83354D6860BC9E1A70BBF151 /* InboxApp.swift */,
+				AEEA230509474676EB25A1DA /* InboxStore.swift */,
+				74E5395712125656A9AA4281 /* Info.plist */,
+				CB729B1A844CE25803480AA6 /* Models.swift */,
+				AB3BA51820F45DAE58A1AE33 /* PrivacyInfo.xcprivacy */,
+				1F865544AF6D0611069A2899 /* RowGestureSurface.swift */,
+				00AD79484D4DDACF77B93E13 /* SearchAndContacts.swift */,
+				953979A249977BA830E2C350 /* SplitInboxView.swift */,
+			);
+			path = Inbox;
+			sourceTree = "<group>";
+		};
+		93F222ECC2A1DBAB47B6FAD7 /* InboxTests */ = {
+			isa = PBXGroup;
+			children = (
+				B884AB897BF32F7FC10DC661 /* InboxTests.swift */,
+			);
+			path = InboxTests;
+			sourceTree = "<group>";
+		};
+		C04C7D870495A8CB40E3B98E = {
+			isa = PBXGroup;
+			children = (
+				528408FE6E58E9FE5295661F /* Inbox */,
+				93F222ECC2A1DBAB47B6FAD7 /* InboxTests */,
+				3198D14B4166D4EC1F593F53 /* InboxUITests */,
+				41A18A6D77A8216CA022DCC0 /* ios */,
+				CC7B79A5261FD97678655D31 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CC7B79A5261FD97678655D31 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				7973723523BC248A64B049CF /* Inbox.app */,
+				1B4561087522EDEA87D4A330 /* InboxTests.xctest */,
+				F488179DC005DD1E7EBC71D4 /* InboxUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		14FEEFFDC5EA58329087CDAF /* InboxUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C703132996A6A4EA8267842A /* Build configuration list for PBXNativeTarget "InboxUITests" */;
+			buildPhases = (
+				CBBC8473E5FCD3CF1F16623A /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9113E4DC6CBC339C542F20D2 /* PBXTargetDependency */,
+			);
+			name = InboxUITests;
+			packageProductDependencies = (
+			);
+			productName = InboxUITests;
+			productReference = F488179DC005DD1E7EBC71D4 /* InboxUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		40AE179E8E5652549BBBCE1D /* Inbox */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 018729891FC3D4B4E7879B5B /* Build configuration list for PBXNativeTarget "Inbox" */;
+			buildPhases = (
+				4F0BDDB85E51CFFC0179444F /* Sources */,
+				A4FE12745CF448991DFFAD36 /* Resources */,
+				AE18D955EB6233C27EF0404A /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Inbox;
+			packageProductDependencies = (
+				88EA58B477A0357F706B8BEA /* AppAuth */,
+			);
+			productName = Inbox;
+			productReference = 7973723523BC248A64B049CF /* Inbox.app */;
+			productType = "com.apple.product-type.application";
+		};
+		87A2A179CEB237D7C21F7313 /* InboxTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5DA1B605F0DAFD776DD14EE0 /* Build configuration list for PBXNativeTarget "InboxTests" */;
+			buildPhases = (
+				D69BBAF1484479CF5B7DB6F4 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				62B12A5CEA3AD84061F0B3CE /* PBXTargetDependency */,
+			);
+			name = InboxTests;
+			packageProductDependencies = (
+			);
+			productName = InboxTests;
+			productReference = 1B4561087522EDEA87D4A330 /* InboxTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FD6775CE7CD5EA945873FE66 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					14FEEFFDC5EA58329087CDAF = {
+						DevelopmentTeam = YOUR_TEAM_ID;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 40AE179E8E5652549BBBCE1D;
+					};
+					40AE179E8E5652549BBBCE1D = {
+						DevelopmentTeam = YOUR_TEAM_ID;
+						ProvisioningStyle = Automatic;
+					};
+					87A2A179CEB237D7C21F7313 = {
+						DevelopmentTeam = YOUR_TEAM_ID;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 518A1F0B72484A14331698E0 /* Build configuration list for PBXProject "Inbox" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = C04C7D870495A8CB40E3B98E;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				133BF33E94F4ED3E9294AF33 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = CC7B79A5261FD97678655D31 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				40AE179E8E5652549BBBCE1D /* Inbox */,
+				87A2A179CEB237D7C21F7313 /* InboxTests */,
+				14FEEFFDC5EA58329087CDAF /* InboxUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A4FE12745CF448991DFFAD36 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				38F13AE8579999BDD6881232 /* Assets.xcassets in Resources */,
+				F78962DAF1A99DEC0A475A48 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4F0BDDB85E51CFFC0179444F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				87AD73398F66CAFCC3F2EE1F /* DetailViews.swift in Sources */,
+				2E83954551E5F7269C8A6778 /* GoogleAPI.swift in Sources */,
+				097D5AD452D0213388E0BA61 /* GoogleSession.swift in Sources */,
+				2196D3AF9075828FB6F25E55 /* HTMLBody.swift in Sources */,
+				F7489DABC0919467EEAB5469 /* InboxApp.swift in Sources */,
+				9158D3BFFEC9B24ADA931441 /* InboxStore.swift in Sources */,
+				3E5357227A982E45AB92FED3 /* Models.swift in Sources */,
+				F881ADED6873DAD94EFBA09B /* RowGestureSurface.swift in Sources */,
+				4D5355FFCAF591C6EBCEB525 /* SearchAndContacts.swift in Sources */,
+				FD370F9108B353A5C5EEB199 /* SplitInboxView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CBBC8473E5FCD3CF1F16623A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				67763E9849A6BA2F52958F26 /* SplitInboxUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D69BBAF1484479CF5B7DB6F4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				685865F6162200B036183AC6 /* InboxTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		62B12A5CEA3AD84061F0B3CE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 40AE179E8E5652549BBBCE1D /* Inbox */;
+			targetProxy = 0F196986730AAF37C44773A8 /* PBXContainerItemProxy */;
+		};
+		9113E4DC6CBC339C542F20D2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 40AE179E8E5652549BBBCE1D /* Inbox */;
+			targetProxy = F0497D5A5398888A82611E5D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		010C63CB11DB23A42CEB6781 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.InboxUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Inbox;
+			};
+			name = Debug;
+		};
+		1D5C7EBDF04A3E8542DBE3D0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Inbox/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.inbox;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		2F1FE6C63458E614E34AAA55 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.InboxTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Inbox.app/Inbox";
+			};
+			name = Release;
+		};
+		5D386FDAAD4B46881C2E8961 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = F4659EB4900446D6CDF933D7 /* Config.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		6A24A9D1EF7367167D5B0BA8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.InboxTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Inbox.app/Inbox";
+			};
+			name = Debug;
+		};
+		7C156036E24E961F93E06759 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Inbox/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.inbox;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D9F0C1F8072E6FA7548AA7D9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.InboxUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Inbox;
+			};
+			name = Release;
+		};
+		F4D82E76DE76842F0DADD7F8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = F4659EB4900446D6CDF933D7 /* Config.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		018729891FC3D4B4E7879B5B /* Build configuration list for PBXNativeTarget "Inbox" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1D5C7EBDF04A3E8542DBE3D0 /* Debug */,
+				7C156036E24E961F93E06759 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		518A1F0B72484A14331698E0 /* Build configuration list for PBXProject "Inbox" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4D82E76DE76842F0DADD7F8 /* Debug */,
+				5D386FDAAD4B46881C2E8961 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		5DA1B605F0DAFD776DD14EE0 /* Build configuration list for PBXNativeTarget "InboxTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6A24A9D1EF7367167D5B0BA8 /* Debug */,
+				2F1FE6C63458E614E34AAA55 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C703132996A6A4EA8267842A /* Build configuration list for PBXNativeTarget "InboxUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				010C63CB11DB23A42CEB6781 /* Debug */,
+				D9F0C1F8072E6FA7548AA7D9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		133BF33E94F4ED3E9294AF33 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/openid/AppAuth-iOS.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.7.6;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		88EA58B477A0357F706B8BEA /* AppAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 133BF33E94F4ED3E9294AF33 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */;
+			productName = AppAuth;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = FD6775CE7CD5EA945873FE66 /* Project object */;
+}

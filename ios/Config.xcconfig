@@ -1,0 +1,5 @@
+// Defaults keep the demo build runnable without credentials.
+GOOGLE_CLIENT_ID = configure-me.apps.googleusercontent.com
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.configure-me
+// Copy Local.example.xcconfig to Local.xcconfig for Google sign-in and device signing.
+#include? "Local.xcconfig"

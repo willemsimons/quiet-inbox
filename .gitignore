@@ -1,0 +1,24 @@
+# Private to this Mac: Google sign-in, the Google client secret, and anything built from real mail.
+client_secret*.json
+.tokens.json
+.session-key
+.rank-cache.json
+out/
+__pycache__/
+.DS_Store
+.feedback.json
+.mail-cache.json
+ios/Local.xcconfig
+ios/build/
+*.xcuserstate
+xcuserdata/
+
+# Raw simulator diagnostics; curated screenshots are committed.
+ios/Screenshots/previous-run/
+mac/build/
+mac/InboxMac.xcodeproj/
+settings.json
+.inbox-export
+.today-cache.json
+.attachments/
+.unsubscribed.json

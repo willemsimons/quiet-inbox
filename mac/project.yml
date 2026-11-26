@@ -1,0 +1,33 @@
+name: InboxMac
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    macOS: "14.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  Inbox:
+    type: application
+    platform: macOS
+    sources: [Inbox]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.inbox.mac
+        PRODUCT_NAME: Inbox
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Inbox
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        ENABLE_HARDENED_RUNTIME: NO
+    info:
+      path: Inbox/Info.plist
+      properties:
+        InboxRepo: $(SRCROOT)/..
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
